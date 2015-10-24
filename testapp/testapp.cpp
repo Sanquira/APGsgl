@@ -9,9 +9,10 @@
 
 //my includes
 #include <algorithm>
+using namespace std;
 
-#define TEST0
-//#define TEST1
+//#define TEST0
+#define TEST1
 //#define TEST2
 //#define TEST3
 //#define TEST4
@@ -1129,10 +1130,6 @@ void myKeyboard(unsigned char key, int x, int y)
 
 int main(int argc, char **argv)
 {
-	Context* cnt = new Context(800, 600);
-	
-	
-	exit(0);
 
 #if USE_GUI
 	// Initialize GLUT

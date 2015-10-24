@@ -7,6 +7,13 @@
 class Color {
 public:
 	float red, green, blue;
+
+	Color(float R, float G, float B){
+		red = R;
+		green = G;
+		blue = B;
+	}
+
 };
 
 class Vector4f{
@@ -22,19 +29,21 @@ public:
 
 class Matrix4f {
 private:
-	float m[4][4];
+	float **m;
 
 
 
 public:
 	Matrix4f(){
 
-		// TODO - matice identity
-		/*m = (float*)calloc(16,sizeof(float));
-		m[1][1] = 1;
-		m[2][2] = 1;
-		m[3][3] = 1;
-		m[4][4] = 1;*/
+		// identity matrix
+		m = (float**)calloc(4, sizeof(float*));
+		for (int i = 0; i < 4; i++)
+		{
+			m[i] = (float*)calloc(4, sizeof(float));
+			m[i][i] = 1;
+		}
+		
 	}
 
 	Matrix4f(float *matrix){
@@ -65,6 +74,21 @@ public:
 	float* mulByVec(float *rightVector){
 	}
 
+	float** getMatrix(){
+		return m;
+	}
+
+	void toTerminal(){
+		for (int i = 0; i < 4; i++)
+		{
+			for (int j = 0; j < 4; j++)
+			{
+				std::cout << m[j][i]<<", ";
+			}
+			std::cout << std::endl;
+		}
+	}
+
 };
 
 class Context {
@@ -74,15 +98,24 @@ private:
 	float *colorBuffer;
 	std::vector<Vector4f> vertexBuffer;
 	std::stack<Matrix4f> modelViewStack, projectionStack;
-	Matrix4f *currMatrix;
+	std::stack<Matrix4f> *currMatrixStack;
 
 public:
 	// constructor
 	Context(int width, int height){
 		colorBuffer = (float*)calloc(width*height * 3, sizeof(float));
+		// vertex buffer
 		vertexBuffer.reserve(8);
-		//currMatrix = modelViewStack.top(); //????
-		//vertexBuffer.push_back(new Vector4f(1., 2., 3.,4.)); //????
+
+		//matrix stacks
+		modelViewStack.push(Matrix4f());
+		projectionStack.push(Matrix4f());
+		currMatrixStack = &modelViewStack;
+		
+		//colors
+		bcgColor = new Color(0,0,0);
+		currColor = new Color(1, 1, 1);
+
 	}
 
 	// destructor
@@ -91,7 +124,17 @@ public:
 		vertexBuffer.shrink_to_fit();
 	}
 
+	Matrix4f getMatrix(){
+		return (*currMatrixStack).top();
+	}
 
+	Color* getDrawColor(){
+
+	}
+
+	float* getColorBuffer(){
+		return colorBuffer;
+	}
 
 
 };

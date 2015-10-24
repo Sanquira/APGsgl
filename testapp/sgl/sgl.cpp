@@ -6,24 +6,26 @@
 //---------------------------------------------------------------------------
 
 #include "sgl.h"
+using namespace std;
+
 
 /// Current error code.
 static sglEErrorCode _libStatus = SGL_NO_ERROR;
 
-static inline void setErrCode(sglEErrorCode c) 
+static inline void setErrCode(sglEErrorCode c)
 {
-  if(_libStatus==SGL_NO_ERROR)
-    _libStatus = c;
+	if (_libStatus == SGL_NO_ERROR)
+		_libStatus = c;
 }
 
 //---------------------------------------------------------------------------
 // sglGetError()
 //---------------------------------------------------------------------------
-sglEErrorCode sglGetError(void) 
+sglEErrorCode sglGetError(void)
 {
-  sglEErrorCode ret = _libStatus;
-  _libStatus = SGL_NO_ERROR;
-  return ret;
+	sglEErrorCode ret = _libStatus;
+	_libStatus = SGL_NO_ERROR;
+	return ret;
 }
 
 //---------------------------------------------------------------------------
@@ -31,49 +33,119 @@ sglEErrorCode sglGetError(void)
 //---------------------------------------------------------------------------
 const char* sglGetErrorString(sglEErrorCode error)
 {
-  static const char *errStrigTable[] = 
-  {
-      "Operation succeeded",
-      "Invalid argument(s) to a call",
-      "Invalid enumeration argument(s) to a call",
-      "Invalid call",
-      "Quota of internal resources exceeded",
-      "Internal library error",
-      "Matrix stack overflow",
-      "Matrix stack underflow",
-      "Insufficient memory to finish the requested operation"
-  };
+	static const char *errStrigTable[] =
+	{
+		"Operation succeeded",
+		"Invalid argument(s) to a call",
+		"Invalid enumeration argument(s) to a call",
+		"Invalid call",
+		"Quota of internal resources exceeded",
+		"Internal library error",
+		"Matrix stack overflow",
+		"Matrix stack underflow",
+		"Insufficient memory to finish the requested operation"
+	};
 
-  if((int)error<(int)SGL_NO_ERROR || (int)error>(int)SGL_OUT_OF_MEMORY ) {
-    return "Invalid value passed to sglGetErrorString()"; 
-  }
+	if ((int)error<(int)SGL_NO_ERROR || (int)error>(int)SGL_OUT_OF_MEMORY) {
+		return "Invalid value passed to sglGetErrorString()";
+	}
 
-  return errStrigTable[(int)error];
+	return errStrigTable[(int)error];
 }
+
+//---------------------------------------------------------------------------
+// Variables
+//---------------------------------------------------------------------------
+
+#define MAXCONTEXT 32
+
+Context **contextBuffer = NULL;
+int currContext = -1;
 
 //---------------------------------------------------------------------------
 // Initialization functions
 //---------------------------------------------------------------------------
 
-void sglInit(void) {}
+void sglInit(void) {
+	contextBuffer = new Context*[MAXCONTEXT];
+	for (int i = 0; i < MAXCONTEXT; i++)
+	{
+		contextBuffer[i] = NULL;
+	}
+}
 
-void sglFinish(void) {}
+void sglFinish(void) {
+	for (int i = 0; i < MAXCONTEXT; i++)
+	{
+		contextBuffer[i]->~Context();
+	}
+	delete contextBuffer;
+	cout << "sgl Finished" << endl;
+}
 
-int sglCreateContext(int width, int height) {return 0;}
+// TODO - out of memory exception
+int sglCreateContext(int width, int height) {
+	int i = 0;
+	for (; i < MAXCONTEXT; i++)
+	{
+		if (contextBuffer[i] == NULL){
+			contextBuffer[i] = new Context(width, height);
+			return i;
+		}
+	}
+	if (i == MAXCONTEXT){
+		throw SGL_OUT_OF_RESOURCES;
+	}
+	return i;
+}
 
-void sglDestroyContext(int id) {}
 
-void sglSetContext(int id) {}
+void sglDestroyContext(int id) {
+	if (id == currContext){
+		throw SGL_INVALID_OPERATION;
+	}
+	if (id < 0 || id >= MAXCONTEXT || contextBuffer[id] == NULL){
+		throw  SGL_INVALID_VALUE;
+	}
+	contextBuffer[id]->~Context();
+	contextBuffer[id] = NULL;
+}
 
-int sglGetContext(void) {return 0;}
+void sglSetContext(int id) {
+	if (id < 0 || id >= MAXCONTEXT || contextBuffer[id] == NULL){
+		throw  SGL_INVALID_VALUE;
+	}
+	currContext = id;
+}
 
-float *sglGetColorBufferPointer(void) {return 0;}
+int sglGetContext(void) {
+	for (int i = 0; i < MAXCONTEXT; i++)
+	{
+		if (contextBuffer[i] == NULL){
+			throw SGL_INVALID_OPERATION;
+			break;
+		}
+	}
+	if (currContext == -1){
+		throw SGL_INVALID_OPERATION;
+	}
+	return currContext;
+}
+
+float *sglGetColorBufferPointer(void) {
+	if (contextBuffer[currContext] == NULL){
+		return NULL;
+	}
+	return contextBuffer[currContext]->getColorBuffer();
+}
 
 //---------------------------------------------------------------------------
 // Drawing functions
 //---------------------------------------------------------------------------
 
-void sglClearColor (float r, float g, float b, float alpha) {}
+void sglClearColor(float r, float g, float b, float alpha) {
+
+}
 
 void sglClear(unsigned what) {}
 
@@ -97,7 +169,7 @@ void sglArc(float x, float y, float z, float radius, float from, float to) {}
 // Transform functions
 //---------------------------------------------------------------------------
 
-void sglMatrixMode( sglEMatrixMode mode ) {}
+void sglMatrixMode(sglEMatrixMode mode) {}
 
 void sglPushMatrix(void) {}
 
@@ -146,42 +218,42 @@ void sglBeginScene() {}
 void sglEndScene() {}
 
 void sglSphere(const float x,
-			   const float y,
-			   const float z,
-			   const float radius) {}
+	const float y,
+	const float z,
+	const float radius) {}
 
 void sglMaterial(const float r,
-				 const float g,
-				 const float b,
-				 const float kd,
-				 const float ks,
-				 const float shine,
-				 const float T,
-				 const float ior) {}
+	const float g,
+	const float b,
+	const float kd,
+	const float ks,
+	const float shine,
+	const float T,
+	const float ior) {}
 
 void sglPointLight(const float x,
-				   const float y,
-				   const float z,
-				   const float r,
-				   const float g,
-				   const float b) {}
+	const float y,
+	const float z,
+	const float r,
+	const float g,
+	const float b) {}
 
 void sglRayTraceScene() {}
 
 void sglRasterizeScene() {}
 
 void sglEnvironmentMap(const int width,
-					   const int height,
-					   float *texels)
+	const int height,
+	float *texels)
 {}
 
 void sglEmissiveMaterial(
-						 const float r,
-						 const float g,
-						 const float b,
-						 const float c0,
-						 const float c1,
-						 const float c2
-						 )
+	const float r,
+	const float g,
+	const float b,
+	const float c0,
+	const float c1,
+	const float c2
+	)
 {}
 
