@@ -36,6 +36,11 @@ public:
 		vec[3] = w;
 	}
 
+	//// destructor
+	//~Vector4f(){
+	//	free(vec);
+	//}
+
 	void toTerminal(){
 		for (size_t i = 0; i < 4; i++)
 		{
@@ -71,6 +76,15 @@ public:
 			}
 		}
 	}
+
+	//// destructor
+	//~Matrix4f(){
+	//	for (int i = 0; i < 4; i++)
+	//	{
+	//		free(m[i]);
+	//	}
+	//	free(m);
+	//}
 
 	Matrix4f mulByMatrix(Matrix4f* right){
 		Matrix4f ret;
@@ -335,24 +349,25 @@ public:
 
 	void renderArc(Vector4f vec, float radius, float from, float to){
 		Matrix4f mat = viewport.mulByMatrix(&modelViewStack.top().mulByMatrix(&projectionStack.top()));
-		float scale = std::sqrt(mat.getMatrix()[0][0] * mat.getMatrix()[1][1] - mat.getMatrix()[1][0] * mat.getMatrix()[0][1]);
+		float c = 1/3.f;
+		float scale = sqrt(mat.getMatrix()[0][0] * mat.getMatrix()[1][1] - mat.getMatrix()[1][0] * mat.getMatrix()[0][1])+c;
 		Vector4f center = mat.mulByVec(vec);
 
 		int numOfVert = (int)(40 * fabs(to - from) / (2 * M_PI));
 		float step = (to - from) / (numOfVert-1);
 
 		for (int i = 0; i < numOfVert-1; i++){
-			Vector4f *p1 = new Vector4f(center.vec[0] + cos(from + i*step)*radius*scale, center.vec[1]+sin(from + i*step)*radius*scale, center.vec[2], 1);
-			Vector4f *p2 = new Vector4f(center.vec[0] + cos(from + (i + 1)*step)*radius*scale, center.vec[1]+sin(from + (i + 1)*step)*radius*scale, center.vec[2], 1);
+			Vector4f *p1 = new Vector4f(center.vec[0] + (radius*scale)*cos(from + i*step), center.vec[1]+(radius*scale)*sin(from + i*step), center.vec[2], 1);
+			Vector4f *p2 = new Vector4f(center.vec[0] + (radius*scale)*cos(from + (i + 1)*step), center.vec[1]+(radius*scale)*sin(from + (i + 1)*step), center.vec[2], 1);
 			renderLine(*p1, *p2);
 		}
 	}
 
 	void renderLine(Vector4f p1, Vector4f p2){
-		int x1 = p1.vec[0];
-		int y1 = p1.vec[1];
-		int x2 = p2.vec[0];
-		int y2 = p2.vec[1];
+		int x1 = round(p1.vec[0]);
+		int y1 = round(p1.vec[1]);
+		int x2 = round(p2.vec[0]);
+		int y2 = round(p2.vec[1]);
 
 		bool uhel = (abs(y2 - y1) > abs(x2 - x1)); //>45°
 		if (uhel){
