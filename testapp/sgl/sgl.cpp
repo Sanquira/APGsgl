@@ -88,13 +88,15 @@ void sglFinish(void) {
 	cout << "sgl Finished" << endl;
 }
 
-// TODO - out of memory exception
 int sglCreateContext(int width, int height) {
 	int i = 0;
 	for (; i < MAXCONTEXT; i++)
 	{
 		if (contextBuffer[i] == NULL){
 			contextBuffer[i] = new Context(width, height);
+			if (contextBuffer[i] == NULL)
+				throw SGL_OUT_OF_MEMORY;
+
 			return i;
 		}
 	}

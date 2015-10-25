@@ -290,6 +290,8 @@ public:
 	//------------------------------------------------------------------
 
 	void setPixel(int x, int y, Color clr){
+		if (x < 0 || y<0 || x >= width || y >= height) 
+			return;
 		colorBuffer[((y)*width + x) * 3 + 0] = clr.red;
 		colorBuffer[((y)*width + x) * 3 + 1] = clr.green;
 		colorBuffer[((y)*width + x) * 3 + 2] = clr.blue;
@@ -346,14 +348,13 @@ public:
 		}
 	}
 
-	//TODO - nedotahuje, zkusit prepsat, kdyz zbude cas
 	void renderLine(Vector4f p1, Vector4f p2){
-		float x1 = p1.vec[0];
-		float y1 = p1.vec[1];
-		float x2 = p2.vec[0];
-		float y2 = p2.vec[1];
+		int x1 = p1.vec[0];
+		int y1 = p1.vec[1];
+		int x2 = p2.vec[0];
+		int y2 = p2.vec[1];
 
-		bool uhel = (fabs(y2 - y1) > fabs(x2 - x1)); //>45°
+		bool uhel = (abs(y2 - y1) > abs(x2 - x1)); //>45°
 		if (uhel){
 			std::swap(x1, y1);
 			std::swap(x2, y2);
@@ -364,16 +365,16 @@ public:
 			std::swap(y1, y2);
 		}
 
-		float dx = x2 - x1;
-		float dy = fabs(y2 - y1);
+		int dx = x2 - x1;
+		int dy = abs(y2 - y1);
 
 		float error = dx / 2.0f;
 		int ystep = (y1 < y2) ? 1 : -1;
-		int y = (int)y1;
+		int y = y1;
 
-		int maxX = (int)x2;
+		int maxX = x2;
 
-		for (int x = x1; x < maxX; x++){
+		for (int x = x1; x <= maxX; x++){
 			if (uhel){
 				setPixel(y, x, *currColor);
 			}
