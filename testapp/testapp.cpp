@@ -25,8 +25,8 @@ using namespace std;
 
 #ifdef TEST1
 #define TEST_1A
-//#define TEST_1B
-//#define TEST_1C
+#define TEST_1B
+#define TEST_1C
 #endif
 
 #ifdef TEST2
@@ -1188,8 +1188,7 @@ int main(int argc, char **argv)
 	sglSetContext(_contexts[0]);
 	sglClearColor(0, 0, 0, 1);
 	sglClear(SGL_COLOR_BUFFER_BIT);
-	for (int i = 0; i < 1; i++) { //TODO - debug
-		//for(int i=0; i<1000; i++) {
+	for (int i = 0; i<1000; i++){
 		DrawTestScene1A();
 	}
 	WriteTGA("results/test1a.tga");
@@ -1205,10 +1204,10 @@ int main(int argc, char **argv)
 	sglSetContext(_contexts[1]);
 	sglClearColor(0, 0, 0, 1);
 	sglClear(SGL_COLOR_BUFFER_BIT);
-	for(int i=0; i<1000; i++)
+	for (int i = 0; i<1000; i++)
 		DrawTestScene1B();
 	WriteTGA("results/test1b.tga");
-	resultsInfo<<"    test1b.png : "<<timer.UserTime()<<endl;
+	resultsInfo << "    test1b.png : " << timer.UserTime() << endl;
 	cout << "done in " << timer.UserTime() << " sec." << endl;
 	totalTime += timer.UserTime();
 #endif
@@ -1220,10 +1219,10 @@ int main(int argc, char **argv)
 	sglSetContext(_contexts[2]);
 	sglClearColor(0, 0, 0, 1);
 	sglClear(SGL_COLOR_BUFFER_BIT);
-	for(int i=0; i<1000; i++)
+	for (int i = 0; i<1000; i++)
 		DrawTestScene1C();
 	WriteTGA("results/test1c.tga");
-	resultsInfo<<"    test1c.png : "<<timer.UserTime()<<endl;
+	resultsInfo << "    test1c.png : " << timer.UserTime() << endl;
 
 	cout << "done in " << timer.UserTime() << " sec." << endl;
 	totalTime += timer.UserTime();
@@ -1306,11 +1305,11 @@ int main(int argc, char **argv)
 
 		sglSetContext(_contexts[0]);
 		sglClearColor(0, 0, 0, 1);
-		sglClear(SGL_COLOR_BUFFER_BIT|SGL_DEPTH_BUFFER_BIT);
-		for(int i=0; i<1; i++)
+		sglClear(SGL_COLOR_BUFFER_BIT | SGL_DEPTH_BUFFER_BIT);
+		for (int i = 0; i < 1; i++)
 			DrawTestScene2D(nffstore);
 
-		resultsInfo<<"    test2d.png : "<<timer.UserTime()<<endl;
+		resultsInfo << "    test2d.png : " << timer.UserTime() << endl;
 		WriteTGA("results/test2d.tga");
 
 
@@ -1370,17 +1369,17 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef TEST_3C
- {
-	 /// read in the NFF file
-	 const char *sceneFile = "floor_sph.nff";
-	 sglSetContext(_contexts[3]);
-	 float time = RayTraceScene(sceneFile);
-	 totalTime += time;
+{
+	/// read in the NFF file
+	const char *sceneFile = "floor_sph.nff";
+	sglSetContext(_contexts[3]);
+	float time = RayTraceScene(sceneFile);
+	totalTime += time;
 
-	 resultsInfo<<"    test3c.png : "<<time<<endl;
-	 cout<<"    test3c.png : "<<time<<endl;
-	 WriteTGA("results/test3c.tga");
- }
+	resultsInfo<<"    test3c.png : "<<time<<endl;
+	cout<<"    test3c.png : "<<time<<endl;
+	WriteTGA("results/test3c.tga");
+}
 #endif
 
 #ifdef TEST_4A
@@ -1475,8 +1474,8 @@ int main(int argc, char **argv)
 	 float time = RayTraceScene(sceneFile);
 	 totalTime += time;
 
-	 resultsInfo<<"    test5d.png : "<<time<<endl;
-	 cout<<"    test5d.png : "<<time<<endl;
+	 resultsInfo << "    test5d.png : " << time << endl;
+	 cout << "    test5d.png : " << time << endl;
 	 WriteTGA("results/test5d.tga");
  }
 #endif
@@ -1486,8 +1485,8 @@ int main(int argc, char **argv)
  // execute main application loop for event processing
  glutMainLoop();
 #else
- resultsInfo<<"TotalTime : "<<totalTime<<endl;
- cout<<"TotalTime : "<<totalTime<<endl;
+ resultsInfo << "TotalTime : " << totalTime << endl;
+ cout << "TotalTime : " << totalTime << endl;
  CleanUp();
 #endif
 

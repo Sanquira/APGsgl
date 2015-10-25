@@ -336,21 +336,20 @@ void sglScale(float scalex, float scaley, float scalez) {
 	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(sc);
 }
 
-//TODO - zkontrolovat translaci
 void sglRotate2D(float angle, float centerx, float centery) {
 	if (transactionEnabled || contextBuffer[currContext] == NULL){
 		throw SGL_INVALID_OPERATION;
 	}
-	sglTranslate(-centerx, -centery, 0);
+	sglTranslate(centerx, centery, 0);
 
 	Matrix4f* rotZ = new Matrix4f();
 	rotZ->getMatrix()[0][0] = cos(angle);
-	rotZ->getMatrix()[1][0] = -sin(angle);
-	rotZ->getMatrix()[0][1] = sin(angle);
+	rotZ->getMatrix()[1][0] = sin(angle);
+	rotZ->getMatrix()[0][1] = -sin(angle);
 	rotZ->getMatrix()[1][1] = cos(angle);
 	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(rotZ);
 
-	sglTranslate(centerx, centery, 0);
+	sglTranslate(-centerx, -centery, 0);
 }
 
 void sglRotateY(float angle) {
