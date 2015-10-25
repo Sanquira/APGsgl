@@ -25,8 +25,8 @@ using namespace std;
 
 #ifdef TEST1
 #define TEST_1A
-#define TEST_1B
-#define TEST_1C
+//#define TEST_1B
+//#define TEST_1C
 #endif
 
 #ifdef TEST2
@@ -1188,11 +1188,12 @@ int main(int argc, char **argv)
 	sglSetContext(_contexts[0]);
 	sglClearColor(0, 0, 0, 1);
 	sglClear(SGL_COLOR_BUFFER_BIT);
-	for(int i=0; i<1000; i++) {
+	for (int i = 0; i < 1; i++) { //TODO - debug
+		//for(int i=0; i<1000; i++) {
 		DrawTestScene1A();
 	}
 	WriteTGA("results/test1a.tga");
-	resultsInfo<<"    test1a.png : "<<timer.UserTime()<<endl;
+	resultsInfo << "    test1a.png : " << timer.UserTime() << endl;
 	cout << "done in " << timer.UserTime() << " sec." << endl;
 	totalTime += timer.UserTime();
 #endif
