@@ -129,7 +129,7 @@ public:
 		{
 			for (int j = 0; j < 4; j++)
 			{
-				std::cout << m[j][i] << ", ";
+				std::cout << m[i][j] << ", ";
 			}
 			std::cout << std::endl;
 		}
@@ -204,7 +204,9 @@ public:
 	}
 
 	void pushMatrix(){
-		currMatrixStack->push(Matrix4f(currMatrixStack->top()));
+		Matrix4f * mat = new Matrix4f();
+		mat->mulByMatrixToItself(&currMatrixStack->top());
+		currMatrixStack->push(*mat);
 	}
 
 	void popMatrix(){
@@ -216,7 +218,7 @@ public:
 	}
 
 	Matrix4f getMatrix(){
-		return (*currMatrixStack).top();
+		return currMatrixStack->top();
 	}
 
 	Color* getDrawColor(){
@@ -304,7 +306,7 @@ public:
 	//------------------------------------------------------------------
 
 	void setPixel(int x, int y, Color clr){
-		if (x < 0 || y<0 || x >= width || y >= height) 
+		if (x < 0 || y < 0 || x >= width || y >= height)
 			return;
 		colorBuffer[((y)*width + x) * 3 + 0] = clr.red;
 		colorBuffer[((y)*width + x) * 3 + 1] = clr.green;
@@ -312,7 +314,7 @@ public:
 	}
 
 	void renderCircle(Vector4f vec, float radii){
-		Matrix4f mat = viewport.mulByMatrix(&modelViewStack.top().mulByMatrix(&projectionStack.top()));
+		Matrix4f mat = viewport.mulByMatrix(&projectionStack.top().mulByMatrix(&modelViewStack.top()));
 		float scale = std::sqrt(mat.getMatrix()[0][0] * mat.getMatrix()[1][1] - mat.getMatrix()[1][0] * mat.getMatrix()[0][1]);
 		Vector4f center = mat.mulByVec(vec);
 		int x, y, p;
@@ -335,31 +337,30 @@ public:
 		}
 	}
 
-	/*
-	The simplest way to achieve this is to approximate the ellipse with a polyline
-	/ polygon (depending on the fill mode) and transform each vertex separately.
-	Use approximation by a polyline / polygon of exactly 40 vertices (so that the
-	speed measurements are fair).
-	*/
-	void renderEllipse(Vector4f vec, float a, float b){
-		Matrix4f mat = viewport.mulByMatrix(&modelViewStack.top().mulByMatrix(&projectionStack.top()));
-		Vector4f center = mat.mulByVec(vec);
-		//TODO - aproximovat usecky, vytvorit seznam vrcholu a zavolat drawLoop (nezapomen smazat vertex buffer)
+	void renderEllipse(Vector4f center, float a, float b){
+		Matrix4f mat = viewport.mulByMatrix(&projectionStack.top().mulByMatrix(&modelViewStack.top()));
+
+		for (int i = 0; i < 40; i++)
+		{
+			float uhel = M_PI*i / 20.;
+			float uhelDalsi = M_PI*(i + 1) / 20.;
+			Vector4f *p1 = new Vector4f(center.vec[0] + a*cos(uhel), center.vec[1] + b*sin(uhel), center.vec[2], 1);
+			Vector4f *p2 = new Vector4f(center.vec[0] + a*cos(uhelDalsi), center.vec[1] + b*sin(uhelDalsi), center.vec[2], 1);
+			renderLine(mat.mulByVec(*p1), mat.mulByVec(*p2));
+		}
+
 	}
 
-	void renderArc(Vector4f vec, float radius, float from, float to){
-		Matrix4f mat = viewport.mulByMatrix(&modelViewStack.top().mulByMatrix(&projectionStack.top()));
-		float c = 1/3.f;
-		float scale = sqrt(mat.getMatrix()[0][0] * mat.getMatrix()[1][1] - mat.getMatrix()[1][0] * mat.getMatrix()[0][1])+c;
-		Vector4f center = mat.mulByVec(vec);
+	void renderArc(Vector4f center, float radius, float from, float to){
+		Matrix4f mat = viewport.mulByMatrix(&projectionStack.top().mulByMatrix(&modelViewStack.top()));
 
 		int numOfVert = (int)(40 * fabs(to - from) / (2 * M_PI));
-		float step = (to - from) / (numOfVert-1);
+		float step = (to - from) / (numOfVert - 1);
 
-		for (int i = 0; i < numOfVert-1; i++){
-			Vector4f *p1 = new Vector4f(center.vec[0] + (radius*scale)*cos(from + i*step), center.vec[1]+(radius*scale)*sin(from + i*step), center.vec[2], 1);
-			Vector4f *p2 = new Vector4f(center.vec[0] + (radius*scale)*cos(from + (i + 1)*step), center.vec[1]+(radius*scale)*sin(from + (i + 1)*step), center.vec[2], 1);
-			renderLine(*p1, *p2);
+		for (int i = 0; i < numOfVert - 1; i++){
+			Vector4f *p1 = new Vector4f(center.vec[0] + cos(from + i*step)*radius, center.vec[1] + sin(from + i*step)*radius, center.vec[2], 1);
+			Vector4f *p2 = new Vector4f(center.vec[0] + cos(from + (i + 1)*step)*radius, center.vec[1] + sin(from + (i + 1)*step)*radius, center.vec[2], 1);
+			renderLine(mat.mulByVec(*p1), mat.mulByVec(*p2));
 		}
 	}
 
@@ -419,7 +420,7 @@ public:
 	//TODO - jak se z tehle metod dostanu k enum v sgl.h??!!
 
 	void drawPoints(){
-		Matrix4f mat = viewport.mulByMatrix(&modelViewStack.top().mulByMatrix(&projectionStack.top()));
+		Matrix4f mat = viewport.mulByMatrix(&projectionStack.top().mulByMatrix(&modelViewStack.top()));
 		for (size_t i = 0; i < vertexBuffer.size(); i++)
 		{
 			Vector4f vec = mat.mulByVec(vertexBuffer[i]);
@@ -428,7 +429,7 @@ public:
 	}
 
 	void drawLines(){
-		Matrix4f mat = viewport.mulByMatrix(&modelViewStack.top().mulByMatrix(&projectionStack.top()));
+		Matrix4f mat = viewport.mulByMatrix(&projectionStack.top().mulByMatrix(&modelViewStack.top()));
 		for (size_t i = 0; i < vertexBuffer.size(); i += 2)
 		{
 			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
@@ -438,7 +439,7 @@ public:
 	}
 
 	void drawStrip(){
-		Matrix4f mat = viewport.mulByMatrix(&modelViewStack.top().mulByMatrix(&projectionStack.top()));
+		Matrix4f mat = viewport.mulByMatrix(&projectionStack.top().mulByMatrix(&modelViewStack.top()));
 		for (size_t i = 0; i < vertexBuffer.size() - 1; i++)
 		{
 			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
@@ -448,7 +449,7 @@ public:
 	}
 
 	void drawLoop(){
-		Matrix4f mat = viewport.mulByMatrix(&modelViewStack.top().mulByMatrix(&projectionStack.top()));
+		Matrix4f mat = viewport.mulByMatrix(&projectionStack.top().mulByMatrix(&modelViewStack.top()));
 		for (size_t i = 0; i < vertexBuffer.size() - 1; i++)
 		{
 			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
