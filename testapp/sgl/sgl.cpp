@@ -6,6 +6,7 @@
 //---------------------------------------------------------------------------
 
 #include "sgl.h"
+//#include <vld.h>
 #include <objects.h>
 using namespace std;
 
@@ -83,9 +84,10 @@ void sglInit(void) {
 void sglFinish(void) {
 	for (int i = 0; i < MAXCONTEXT; i++)
 	{
-		contextBuffer[i]->~Context();
+		if (contextBuffer[i] != NULL)
+			delete(contextBuffer[i]);
 	}
-	delete contextBuffer;
+	delete [] contextBuffer;
 	cout << "sgl Finished" << endl;
 }
 
@@ -324,6 +326,7 @@ void sglTranslate(float x, float y, float z) {
 	tr->getMatrix()[1][3] = y;
 	tr->getMatrix()[2][3] = z;
 	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(tr);
+	delete(tr);
 }
 
 void sglScale(float scalex, float scaley, float scalez) {
@@ -335,6 +338,7 @@ void sglScale(float scalex, float scaley, float scalez) {
 	sc->getMatrix()[1][1] = scaley;
 	sc->getMatrix()[2][2] = scalez;
 	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(sc);
+	delete(sc);
 }
 
 void sglRotate2D(float angle, float centerx, float centery) {
@@ -349,6 +353,7 @@ void sglRotate2D(float angle, float centerx, float centery) {
 	rotZ->getMatrix()[0][1] = -sin(angle);
 	rotZ->getMatrix()[1][1] = cos(angle);
 	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(rotZ);
+	delete(rotZ);
 
 	sglTranslate(-centerx, -centery, 0);
 }
@@ -364,6 +369,7 @@ void sglRotateY(float angle) {
 	rotY->getMatrix()[0][2] = sin(angle);
 	rotY->getMatrix()[2][2] = cos(angle);
 	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(rotY);
+	delete(rotY);
 }
 
 void sglOrtho(float left, float right, float bottom, float top, float near, float far) {
@@ -381,6 +387,7 @@ void sglOrtho(float left, float right, float bottom, float top, float near, floa
 	mat->getMatrix()[1][3] = -(top + bottom) / (top - bottom);
 	mat->getMatrix()[2][3] = -(far + near) / (far - near);
 	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(mat);
+	delete(mat);
 }
 
 //TODO - zatim neni potreba
@@ -401,6 +408,7 @@ void sglViewport(int x, int y, int width, int height) {
 	mat->getMatrix()[0][3] = x + (float)width / 2;
 	mat->getMatrix()[1][3] = y + (float)height / 2;
 	contextBuffer[currContext]->setViewport(*mat);
+	delete(mat);
 }
 
 //---------------------------------------------------------------------------

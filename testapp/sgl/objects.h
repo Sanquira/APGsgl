@@ -1,10 +1,11 @@
 
+#define _USE_MATH_DEFINES
+
 #include <cstdlib>
 #include <iostream>
 #include <vector>
 #include <stack>
 #include <sgl.h>
-#define _USE_MATH_DEFINES
 #include <cmath>
 #include <algorithm>
 #include <cstring>
@@ -191,12 +192,26 @@ public:
 
 	}
 
-	//TODO
 	// destructor
 	~Context(){
+		//buffers
+		vertexBuffer.clear();
 		free(colorBuffer);
-		//vertexBuffer.shrink_to_fit();
-		std::vector<Vector4f>(vertexBuffer).swap(vertexBuffer);
+		while (!modelViewStack.empty())
+		{
+			modelViewStack.pop();
+		}
+		delete(&modelViewStack);
+		while (!projectionStack.empty())
+		{
+			projectionStack.pop();
+		}
+		delete(&projectionStack);
+
+		//others
+		delete(&viewport);
+		delete(bcgColor);
+		delete(currColor);
 	}
 
 	void setMatrixMode(int mode){
@@ -227,6 +242,7 @@ public:
 	}
 
 	void setDrawColor(float r, float g, float b){
+		delete(currColor);
 		currColor = new Color(r, g, b);
 	}
 
@@ -235,6 +251,7 @@ public:
 	}
 
 	void setBcgColor(float r, float g, float b){
+		delete(bcgColor);
 		bcgColor = new Color(r, g, b);
 	}
 
@@ -348,6 +365,8 @@ public:
 			Vector4f *p1 = new Vector4f(center.vec[0] + a*cos(uhel), center.vec[1] + b*sin(uhel), center.vec[2], 1);
 			Vector4f *p2 = new Vector4f(center.vec[0] + a*cos(uhelDalsi), center.vec[1] + b*sin(uhelDalsi), center.vec[2], 1);
 			renderLine(mat.mulByVec(*p1), mat.mulByVec(*p2));
+			delete(p1);
+			delete(p2);
 		}
 
 	}
@@ -362,6 +381,8 @@ public:
 			Vector4f *p1 = new Vector4f(center.vec[0] + cos(from + i*step)*radius, center.vec[1] + sin(from + i*step)*radius, center.vec[2], 1);
 			Vector4f *p2 = new Vector4f(center.vec[0] + cos(from + (i + 1)*step)*radius, center.vec[1] + sin(from + (i + 1)*step)*radius, center.vec[2], 1);
 			renderLine(mat.mulByVec(*p1), mat.mulByVec(*p2));
+			delete(p1);
+			delete(p2);
 		}
 	}
 
