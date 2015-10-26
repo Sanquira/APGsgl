@@ -6,6 +6,7 @@
 //---------------------------------------------------------------------------
 
 #include "sgl.h"
+#include <objects.h>
 using namespace std;
 
 

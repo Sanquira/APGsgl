@@ -5,7 +5,11 @@
 #include <stack>
 #include <sgl.h>
 #define _USE_MATH_DEFINES
-#include <math.h>
+#include <cmath>
+#include <algorithm>
+#include <cstring>
+
+using namespace std;
 
 class Color {
 public:
@@ -191,7 +195,8 @@ public:
 	// destructor
 	~Context(){
 		free(colorBuffer);
-		vertexBuffer.shrink_to_fit();
+		//vertexBuffer.shrink_to_fit();
+		std::vector<Vector4f>(vertexBuffer).swap(vertexBuffer);
 	}
 
 	void setMatrixMode(int mode){
@@ -219,10 +224,6 @@ public:
 
 	Matrix4f getMatrix(){
 		return currMatrixStack->top();
-	}
-
-	Color* getDrawColor(){
-
 	}
 
 	void setDrawColor(float r, float g, float b){
