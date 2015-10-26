@@ -36,6 +36,11 @@ public:
 		vec[3] = w;
 	}
 
+	//// destructor
+	//~Vector4f(){
+	//	free(vec);
+	//}
+
 	void toTerminal(){
 		for (size_t i = 0; i < 4; i++)
 		{
@@ -71,6 +76,15 @@ public:
 			}
 		}
 	}
+
+	//// destructor
+	//~Matrix4f(){
+	//	for (int i = 0; i < 4; i++)
+	//	{
+	//		free(m[i]);
+	//	}
+	//	free(m);
+	//}
 
 	Matrix4f mulByMatrix(Matrix4f* right){
 		Matrix4f ret;
@@ -351,10 +365,10 @@ public:
 	}
 
 	void renderLine(Vector4f p1, Vector4f p2){
-		int x1 = p1.vec[0];
-		int y1 = p1.vec[1];
-		int x2 = p2.vec[0];
-		int y2 = p2.vec[1];
+		int x1 = round(p1.vec[0]);
+		int y1 = round(p1.vec[1]);
+		int x2 = round(p2.vec[0]);
+		int y2 = round(p2.vec[1]);
 
 		bool uhel = (abs(y2 - y1) > abs(x2 - x1)); //>45°
 		if (uhel){
