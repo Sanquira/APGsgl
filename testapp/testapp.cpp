@@ -9,6 +9,7 @@
 
 //my includes
 //#include <vld.h>
+#include "objects.h"
 #include <algorithm>
 using namespace std;
 
@@ -25,8 +26,8 @@ using namespace std;
 #endif
 
 #ifdef TEST1
-//#define TEST_1A
-#define TEST_1B
+#define TEST_1A
+//#define TEST_1B
 //#define TEST_1C
 #endif
 
@@ -1189,7 +1190,7 @@ int main(int argc, char **argv)
 	sglSetContext(_contexts[0]);
 	sglClearColor(0, 0, 0, 1);
 	sglClear(SGL_COLOR_BUFFER_BIT);
-	for (int i = 0; i<1000; i++){
+	for (int i = 0; i<1; i++){
 		DrawTestScene1A();
 	}
 	WriteTGA("results/test1a.tga");
@@ -1205,7 +1206,7 @@ int main(int argc, char **argv)
 	sglSetContext(_contexts[1]);
 	sglClearColor(0, 0, 0, 1);
 	sglClear(SGL_COLOR_BUFFER_BIT);
-	for (int i = 0; i<1000; i++)
+	for (int i = 0; i<1; i++)
 		DrawTestScene1B();
 	WriteTGA("results/test1b.tga");
 	resultsInfo << "    test1b.png : " << timer.UserTime() << endl;
