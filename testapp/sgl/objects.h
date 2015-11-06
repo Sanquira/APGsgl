@@ -1,10 +1,11 @@
 
+#define _USE_MATH_DEFINES
+
 #include <cstdlib>
 #include <iostream>
 #include <vector>
 #include <stack>
 #include <sgl.h>
-#define _USE_MATH_DEFINES
 #include <cmath>
 #include <algorithm>
 #include <cstring>
