@@ -314,7 +314,7 @@ void sglMultMatrix(const float *matrix) {
 	if (transactionEnabled || contextBuffer[currContext] == NULL){
 		throw SGL_INVALID_OPERATION;
 	}
-	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(new Matrix4f(matrix));
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself( new Matrix4f(matrix));
 }
 
 void sglTranslate(float x, float y, float z) {
