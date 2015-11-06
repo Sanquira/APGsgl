@@ -39,11 +39,6 @@ public:
 		vec[3] = w;
 	}
 
-	//// destructor
-	//~Vector4f(){
-	//	free(vec);
-	//}
-
 	void toTerminal(){
 		for (size_t i = 0; i < 4; i++)
 		{
@@ -80,15 +75,6 @@ public:
 			}
 		}
 	}
-
-	//// destructor
-	//~Matrix4f(){
-	//	for (int i = 0; i < 4; i++)
-	//	{
-	//		free(m[i]);
-	//	}
-	//	free(m);
-	//}
 
 	Matrix4f* mulByMatrix(Matrix4f* right){
 		Matrix4f* ret = new Matrix4f();
@@ -193,13 +179,11 @@ public:
 		//buffers
 		vertexBuffer.clear();
 		free(colorBuffer);
-		while (!modelViewStack.empty())
-		{
+		while (!modelViewStack.empty()){
 			modelViewStack.pop();
 		}
 		delete(&modelViewStack);
-		while (!projectionStack.empty())
-		{
+		while (!projectionStack.empty()){
 			projectionStack.pop();
 		}
 		delete(&projectionStack);
