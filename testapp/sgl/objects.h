@@ -39,6 +39,14 @@ public:
 		vec[3] = w;
 	}
 
+	Vector4f minus(Vector4f &vector){
+		Vector4f ret;
+		ret.vec[0] = vec[0] - vector.vec[0];
+		ret.vec[1] = vec[1] - vector.vec[1];
+		ret.vec[2] = vec[2] - vector.vec[2];
+		return ret;
+	}
+
 	void toTerminal(){
 		for (size_t i = 0; i < 4; i++)
 		{
@@ -370,10 +378,10 @@ public:
 	void renderArc(Vector4f &center, float radius, float from, float to){
 		Matrix4f mat = computeTransformation();
 
-		int numOfVert = (int)(40 * fabs(to - from) / (2 * M_PI));
-		float step = (to - from) / (numOfVert - 1);
+		int numOfVert = ceil(40 * fabs(to - from) / (2 * M_PI))+1;
+		float step = (to - from) / (numOfVert-1);
 
-		for (int i = 0; i < numOfVert - 1; i++){
+		for (int i = 0; i < numOfVert-1 ; i++){
 			//Vector4f *p1 = new Vector4f(, , center.vec[2], 1);
 			//Vector4f *p2 = new Vector4f(, , center.vec[2], 1);
 			Vector4f p1, p2;
@@ -499,6 +507,49 @@ public:
 		//delete(vec1);
 		//delete(vec2);
 		//delete(mat);
+	}
+
+	//------------------------------------------------------------------
+	//FILLED OBJECTS
+	//------------------------------------------------------------------
+
+	void drawFilledLoop(){
+		std::vector<int> prus;
+		Matrix4f mat = computeTransformation();
+		int maxY=-INT_MIN, minY=INT_MAX;
+		for (size_t i = 0; i < vertexBuffer.size(); i++)
+		{
+			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
+			int y0 = ceil(vec1.vec[1]);
+			(maxY <= y0) ? maxY = y0 : y0;
+			(minY >= y0) ? minY = y0 : y0;
+		}
+		for (int y = maxY; y >= minY; y--)
+		{
+			prus.clear();
+			for (size_t i = 0; i < vertexBuffer.size() ; i++)
+			{
+				Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
+				Vector4f vec2 = mat.mulByVec(vertexBuffer[(i == vertexBuffer.size()-1) ? 0 : i + 1]);
+				Vector4f vec = vec2.minus(vec1);
+				float t = (y - vec1.vec[1]) / vec.vec[1];
+				if (t > 0 && t < 1){
+					float x = vec1.vec[0] + vec.vec[0] * t;
+					prus.push_back(ceil(x));
+				}
+			}
+			std::sort(prus.begin(), prus.end());
+			if (prus.size() != 0){
+				for (size_t i = 0; i < prus.size()-1; i += 2)
+				{
+					for (int x = prus[i]; x < prus[i+1]; x++)
+					{
+						setPixel(x, y, currColor);
+					}
+				}
+			}
+		}
+		prus.clear();
 	}
 
 };

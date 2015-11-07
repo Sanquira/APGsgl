@@ -8,14 +8,14 @@
 /// uncomment the tests you wish to run
 
 //my includes
-#include <vld.h>
+//#include <vld.h>
 #include "objects.h"
 #include <algorithm>
 using namespace std;
 
 //#define TEST0
-#define TEST1
-//#define TEST2
+//#define TEST1
+#define TEST2
 //#define TEST3
 //#define TEST4
 //#define TEST5
@@ -27,15 +27,15 @@ using namespace std;
 
 #ifdef TEST1
 #define TEST_1A
-#define TEST_1B
-#define TEST_1C
+//#define TEST_1B
+//#define TEST_1C
 #endif
 
 #ifdef TEST2
-#define TEST_2A
+//#define TEST_2A
 #define TEST_2B
-#define TEST_2C
-#define TEST_2D
+//#define TEST_2C
+//#define TEST_2D
 #endif
 
 #ifdef TEST3
@@ -1240,7 +1240,8 @@ int main(int argc, char **argv)
 	sglSetContext(_contexts[3]);
 	sglClearColor(0, 0, 0, 1);
 	sglClear(SGL_COLOR_BUFFER_BIT);
-	for(int i=0; i<150; i++)
+	//for(int i=0; i<150; i++) //TODO
+	for(int i=0; i<1; i++)
 		DrawTestScene2A();
 	resultsInfo<<"    test2a.png : "<<timer.UserTime()<<endl;
 	WriteTGA("results/test2a.tga");
@@ -1256,7 +1257,8 @@ int main(int argc, char **argv)
 	sglSetContext(_contexts[4]);
 	sglClearColor(0, 0, 0, 1);
 	sglClear(SGL_COLOR_BUFFER_BIT);
-	for(int i=0; i<15; i++)
+	//for (int i = 0; i<15; i++)
+	for (int i = 0; i < 1; i++)
 		DrawTestScene2B();
 	resultsInfo<<"    test2b.png : "<<timer.UserTime()<<endl;
 	WriteTGA("results/test2b.tga");

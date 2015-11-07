@@ -210,6 +210,12 @@ void sglEnd(void) {
 	if (con->getVertexDrawMode() == SGL_LINE_LOOP){
 		con->drawLoop();
 	}
+	if (con->getVertexDrawMode() == SGL_POLYGON){
+		if (con->getAreaDrawMode() == SGL_FILL){
+			con->drawFilledLoop();
+		}
+		con->drawLoop();
+	}
 	con->clearVertexBuffer();
 }
 
@@ -446,15 +452,16 @@ void sglAreaMode(sglEAreaMode mode) {
 	if ((mode & ~(SGL_POINT | SGL_LINE | SGL_FILL)) != 0){
 		throw SGL_INVALID_ENUM;
 	}
-	if ((mode&SGL_POINT) == SGL_POINT){
-		contextBuffer[currContext]->setAreaDrawMode(SGL_POINT);
-		return;
-	}
-	if ((mode&SGL_LINE) == SGL_LINE){
+
+	if ((mode & SGL_LINE) == SGL_LINE){
 		contextBuffer[currContext]->setAreaDrawMode(SGL_LINE);
 		return;
 	}
-	contextBuffer[currContext]->setAreaDrawMode(SGL_FILL);
+	if ((mode & SGL_FILL) == SGL_FILL){
+		contextBuffer[currContext]->setAreaDrawMode(SGL_FILL);
+		return;
+	}
+	contextBuffer[currContext]->setAreaDrawMode(SGL_POINT);
 }
 
 void sglPointSize(float size) {
