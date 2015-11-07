@@ -389,7 +389,7 @@ public:
 	void renderArc(Vector4f &center, float radius, float from, float to){
 		Matrix4f mat = computeTransformation();
 
-		int numOfVert = ceil(40 * fabs(to - from) / (2 * M_PI)) + 1;
+		int numOfVert = (int)ceil(40 * fabs(to - from) / (2 * M_PI)) + 1;
 		float step = (to - from) / (numOfVert - 1);
 
 		for (int i = 0; i < numOfVert - 1; i++){
@@ -519,7 +519,7 @@ public:
 		for (size_t i = 0; i < vertexBuffer.size(); i++)
 		{
 			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
-			int y0 = ceil(vec1.vec[1]); //TODO
+			int y0 = (int)ceil(vec1.vec[1]); //TODO
 			(maxY <= y0) ? maxY = y0 : y0;
 			(minY >= y0) ? minY = y0 : y0;
 		}
@@ -532,9 +532,9 @@ public:
 				Vector4f vec2 = mat.mulByVec(vertexBuffer[(i == vertexBuffer.size() - 1) ? 0 : i + 1]);
 				Vector4f vec = vec2.minus(vec1);
 				float t = (y - vec1.vec[1]) / vec.vec[1];
-				if (t >= 0 && t < 1){	//TODO
+				if (t >= 0 && t < 1){	//TODO - meze paramteru usecky
 					float x = vec1.vec[0] + vec.vec[0] * t;
-					prus.push_back(ceil(x)); //TODO
+					prus.push_back((int)ceil(x)); //TODO
 				}
 			}
 			std::sort(prus.begin(), prus.end());
@@ -552,7 +552,7 @@ public:
 	}
 
 	void drawArcFilled(Vector4f &center, float radius, float from, float to){
-		int numOfVert = ceil(40 * fabs(to - from) / (2 * M_PI)) + 1;
+		int numOfVert = (int)ceil(40 * fabs(to - from) / (2 * M_PI)) + 1;
 		float step = (to - from) / (numOfVert - 1);
 		vertexBuffer.clear();
 		for (int i = 0; i < numOfVert; i++){
@@ -584,6 +584,7 @@ public:
 		vertexBuffer.clear();
 	}
 
+	// TODO - dodelat Scan line seed fill pokud bude chut a potreba nejaky nastrel je v commitu 951b2f86 
 	void drawCircleFilled(Vector4f &vec, float radii){
 		float tmpred = currColor->red;
 		currColor->red = -1;
@@ -594,63 +595,41 @@ public:
 		std::vector<Vector4f> seeds;
 		seeds.push_back(center);
 		Color clr = Color(-1, -1, -1);
-		Color clr2 = Color(-1, -1, -1);
-
-		int idx = 0;
 
 		do{
 			Vector4f seed = seeds.back();
 			seeds.pop_back();
 			// right
-			for (size_t i = seed.vec[0]; i < width - 1; i++)
+			for (int i = (int)seed.vec[0]; i < width - 1; i++)
 			{
-				setPixel(i, seed.vec[1], currColor);
-				//up
-				clr2 = getPixelColor(i, seed.vec[1] + 1);
-				clr = getPixelColor(i + 1, seed.vec[1] + 1);
-				if (clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr2.compare(*currColor)){
-					seeds.push_back(Vector4f(i, seed.vec[1] + 1, 0, 1));
-				}
-				//down
-				clr2 = getPixelColor(i, seed.vec[1] - 1);
-				clr = getPixelColor(i + 1, seed.vec[1] - 1);
-				if (clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr2.compare(*currColor)){
-					seeds.push_back(Vector4f(i, seed.vec[1] - 1, 0, 1));
-				}
+				setPixel(i, (int)seed.vec[1], currColor);
 				//end
-				clr = getPixelColor(i + 1, seed.vec[1]);
+				clr = getPixelColor(i + 1, (int)seed.vec[1]);
 				if (clr.compare(Color(-1, currColor->green, currColor->blue))){
 					break;
 				}
 			}
 			// left
-			for (size_t i = seed.vec[0]; i >= 0; i--)
+			for (size_t i = (int)seed.vec[0]; i >= 0; i--)
 			{
-				setPixel(i, seed.vec[1], currColor);
-				//up
-				clr2 = getPixelColor(i, seed.vec[1] + 1);
-				clr = getPixelColor(i - 1, seed.vec[1] + 1);
-				if (clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr2.compare(*currColor)){
-					seeds.push_back(Vector4f(i, seed.vec[1] + 1, 0, 1));
-				}
-				//down
-				clr2 = getPixelColor(i, seed.vec[1] - 1);
-				clr = getPixelColor(i - 1, seed.vec[1] - 1);
-				if (clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr2.compare(*currColor)){
-					seeds.push_back(Vector4f(i, seed.vec[1] - 1, 0, 1));
-				}
+				setPixel(i, (int)seed.vec[1], currColor);
 				//end
-				clr = getPixelColor(i - 1, seed.vec[1]);
+				clr = getPixelColor(i - 1, (int)seed.vec[1]);
 				if (clr.compare(Color(-1, currColor->green, currColor->blue))){
 					break;
 				}
 			}
 
-			cout << seeds.size() << endl;
-			if (idx == 500){
-				break;
+			clr = getPixelColor((int)seed.vec[0], (int)seed.vec[1] + 1);
+			if (!clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr.compare(*currColor)){
+				seeds.push_back(Vector4f(seed.vec[0], seed.vec[1] + 1, 0, 1));
 			}
-			idx++;
+
+			clr = getPixelColor((int)seed.vec[0], (int)seed.vec[1] - 1);
+			if (!clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr.compare(*currColor)){
+				seeds.push_back(Vector4f(seed.vec[0], seed.vec[1] - 1, 0, 1));
+			}
+			
 		} while (!seeds.empty());
 	}
 };

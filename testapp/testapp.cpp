@@ -394,43 +394,43 @@ void DrawTestScene2B()
 
 	sglTranslate(1.5, 0, 0);
 
-	float r=1.2;
+	float r;
 	// circles
-	//for (r = 1.2; r > 0.1; r -= 0.1) {
+	for (r = 1.2; r > 0.1; r -= 0.1) {
 		sglColor3f(0, r, r);
 		sglAreaMode(SGL_FILL);
 		sglCircle(0, 0, 0, r);
-		/*sglColor3f(r, r, 0);
+		sglColor3f(r, r, 0);
 		sglAreaMode(SGL_LINE);
 		sglCircle(0, 0, 0, r);
 		sglColor3f(r, r, r);
 		sglAreaMode(SGL_POINT);
-		sglCircle(0, 0, 0, r);*/
-	//}
+		sglCircle(0, 0, 0, r);
+	}
 
-	//// ellipses
-	//sglTranslate(2.5, 0, 0);
+	// ellipses
+	sglTranslate(2.5, 0, 0);
 
-	//sglPushMatrix();
-	//sglTranslate(0, 1.5, 0);
-	//sglAreaMode(SGL_FILL);
-	//ellipses(1.4, 1, 1, 0);
-	//sglAreaMode(SGL_LINE);
-	//ellipses(1.4, 0, 1, 1);
-	//sglTranslate(0, -3, 0);
-	//sglRotate2D(M_PI*0.25, 0, 0);
-	//sglAreaMode(SGL_FILL);
-	//ellipses(1.4, 1, 1, 0);
-	//sglAreaMode(SGL_LINE);
-	//ellipses(1.4, 0, 1, 1);
-	//sglPopMatrix();
+	sglPushMatrix();
+	sglTranslate(0, 1.5, 0);
+	sglAreaMode(SGL_FILL);
+	ellipses(1.4, 1, 1, 0);
+	sglAreaMode(SGL_LINE);
+	ellipses(1.4, 0, 1, 1);
+	sglTranslate(0, -3, 0);
+	sglRotate2D(M_PI*0.25, 0, 0);
+	sglAreaMode(SGL_FILL);
+	ellipses(1.4, 1, 1, 0);
+	sglAreaMode(SGL_LINE);
+	ellipses(1.4, 0, 1, 1);
+	sglPopMatrix();
 
-	//// arcs
-	//sglTranslate(2.5, 0, 0);
-	//sglAreaMode(SGL_FILL);
-	//arcs(1.3, 1, 0, 1);
-	//sglAreaMode(SGL_LINE);
-	//arcs(1.3, 0, 1, 0);
+	// arcs
+	sglTranslate(2.5, 0, 0);
+	sglAreaMode(SGL_FILL);
+	arcs(1.3, 1, 0, 1);
+	sglAreaMode(SGL_LINE);
+	arcs(1.3, 0, 1, 0);
 }
 
 
