@@ -8,7 +8,7 @@
 /// uncomment the tests you wish to run
 
 //my includes
-//#include <vld.h>
+#include <vld.h>
 #include "objects.h"
 #include <algorithm>
 using namespace std;
