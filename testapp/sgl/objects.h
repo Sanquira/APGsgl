@@ -76,36 +76,36 @@ public:
 		}
 	}
 
-	Matrix4f* mulByMatrix(Matrix4f* right){
-		Matrix4f* ret = new Matrix4f();
+	Matrix4f mulByMatrix(Matrix4f &right){
+		Matrix4f ret;
 		for (int i = 0; i < 4; i++)
 		{
 			for (int j = 0; j < 4; j++)
 			{
-				ret->m[i][j] = 0;
+				ret.m[i][j] = 0;
 				for (int k = 0; k < 4; k++)
 				{
-					ret->m[i][j] += m[i][k] * (*right).m[k][j];
+					ret.m[i][j] += m[i][k] * right.m[k][j];
 				}
 			}
 		}
 		return ret;
 	}
 
-	void mulByMatrixToItself(Matrix4f * right){
-		Matrix4f* tmp = mulByMatrix(right);
-		memcpy(m, tmp->m, sizeof(m));
-		delete tmp;
+	void mulByMatrixToItself(Matrix4f *right){
+		Matrix4f tmp = mulByMatrix(*right);
+		memcpy(m, tmp.m, sizeof(m));
+		//delete tmp;
 	}
 
-	Vector4f* mulByVec(Vector4f * vec){
-		Vector4f* ret = new Vector4f();
+	Vector4f mulByVec(Vector4f &vec){
+		Vector4f ret;
 		for (int i = 0; i < 4; i++)
 		{
-			ret->vec[i] = 0;
+			ret.vec[i] = 0;
 			for (int j = 0; j < 4; j++)
 			{
-				ret->vec[i] += vec->vec[j] * m[i][j];
+				ret.vec[i] += vec.vec[j] * m[i][j];
 			}
 		}
 		return ret;
@@ -204,9 +204,9 @@ public:
 	}
 
 	void pushMatrix(){
-		Matrix4f * mat = new Matrix4f();
-		mat->mulByMatrixToItself(&currMatrixStack->top());
-		currMatrixStack->push(*mat);
+		Matrix4f mat;// = new Matrix4f();
+		mat.mulByMatrixToItself(&currMatrixStack->top());
+		currMatrixStack->push(mat);
 	}
 
 	void popMatrix(){
@@ -295,12 +295,12 @@ public:
 		memcpy(&viewport, &mat, sizeof(Matrix4f));
 	}
 
-	Matrix4f* computeTransformation(){
+	Matrix4f computeTransformation(){
 	//	projectionStack.top().toTerminal();
 	//	modelViewStack.top().toTerminal();
 	//	viewport.toTerminal();
 	//	cout << "=====" << endl;
-		Matrix4f * tmp = projectionStack.top().mulByMatrix(&modelViewStack.top());
+		Matrix4f tmp = projectionStack.top().mulByMatrix(modelViewStack.top());
 		return viewport.mulByMatrix(tmp);
 	}
 
@@ -316,18 +316,18 @@ public:
 		colorBuffer[((y)*width + x) * 3 + 2] = clr->blue;
 	}
 
-	void renderCircle(Vector4f * vec, float radii){
-		Matrix4f* mat = computeTransformation();
+	void renderCircle(Vector4f &vec, float radii){
+		Matrix4f mat = computeTransformation();
 	//	mat->toTerminal();
 	//	cout << "*******************" << endl;
-		float scale = std::sqrt(mat->m[0][0] * mat->m[1][1] - mat->m[1][0] * mat->m[0][1]);
-		Vector4f* center = mat->mulByVec(vec);
+		float scale = std::sqrt(mat.m[0][0] * mat.m[1][1] - mat.m[1][0] * mat.m[0][1]);
+		Vector4f center = mat.mulByVec(vec);
 		int x, y, p;
 		x = 0;
 		y = (int)(radii*scale);
 		p = (int)(1 - radii*scale); // p pro [0,r]
 		while (x < y) {
-			symetricPoints(x, y, center);
+			symetricPoints(x, y, &center);
 			if (p < 0) {
 				p += 2 * x + 1;
 			}
@@ -338,49 +338,65 @@ public:
 			x += 1;
 		}
 		if (x == y) {// 45° pixely, jen 4
-			symetricPoints(x, y, center);
+			symetricPoints(x, y, &center);
 		}
-		delete(mat);
-		delete(center);
+		//delete(mat);
+		//delete(center);
 	}
 
-	void renderEllipse(Vector4f * center, float a, float b){
-		Matrix4f* mat = computeTransformation();
+	void renderEllipse(Vector4f &center, float a, float b){
+		Matrix4f mat = computeTransformation();
 
 		for (int i = 0; i < 40; i++)
 		{
 			float uhel = (float)(M_PI*i / 20.);
 			float uhelDalsi = (float)(M_PI*(i + 1) / 20.);
-			Vector4f *p1 = new Vector4f(center->vec[0] + a*cos(uhel), center->vec[1] + b*sin(uhel), center->vec[2], 1);
-			Vector4f *p2 = new Vector4f(center->vec[0] + a*cos(uhelDalsi), center->vec[1] + b*sin(uhelDalsi), center->vec[2], 1);
-			renderLine(mat->mulByVec(p1), mat->mulByVec(p2));
-			delete(p1);
-			delete(p2);
+			Vector4f p1, p2;
+			p1.vec[0] = center.vec[0] + a*cos(uhel);
+			p1.vec[1] = center.vec[1] + b*sin(uhel);
+			p1.vec[2] = center.vec[2];
+			p1.vec[3] = 1;
+			p2.vec[0] = center.vec[0] + a*cos(uhelDalsi);
+			p2.vec[1] = center.vec[1] + b*sin(uhelDalsi);
+			p2.vec[2] = center.vec[2];
+			p2.vec[3] = 1;
+			renderLine(mat.mulByVec(p1), mat.mulByVec(p2));
+			//delete(p1);
+			//delete(p2);
 		}
-		delete(mat);
+		//delete(mat);
 	}
 
-	void renderArc(Vector4f * center, float radius, float from, float to){
-		Matrix4f* mat = computeTransformation();
+	void renderArc(Vector4f &center, float radius, float from, float to){
+		Matrix4f mat = computeTransformation();
 
 		int numOfVert = (int)(40 * fabs(to - from) / (2 * M_PI));
 		float step = (to - from) / (numOfVert - 1);
 
 		for (int i = 0; i < numOfVert - 1; i++){
-			Vector4f *p1 = new Vector4f(center->vec[0] + cos(from + i*step)*radius, center->vec[1] + sin(from + i*step)*radius, center->vec[2], 1);
-			Vector4f *p2 = new Vector4f(center->vec[0] + cos(from + (i + 1)*step)*radius, center->vec[1] + sin(from + (i + 1)*step)*radius, center->vec[2], 1);
-			renderLine(mat->mulByVec(p1), mat->mulByVec(p2));
-			delete(p1);
-			delete(p2);
+			//Vector4f *p1 = new Vector4f(, , center.vec[2], 1);
+			//Vector4f *p2 = new Vector4f(, , center.vec[2], 1);
+			Vector4f p1, p2;
+			p1.vec[0] = center.vec[0] + cos(from + i*step)*radius;
+			p1.vec[1] = center.vec[1] + sin(from + i*step)*radius;
+			p1.vec[2] = center.vec[2];
+			p1.vec[3] = 1;
+			p2.vec[0] = center.vec[0] + cos(from + (i + 1)*step)*radius;
+			p2.vec[1] = center.vec[1] + sin(from + (i + 1)*step)*radius;
+			p2.vec[2] = center.vec[2];
+			p2.vec[3] = 1;
+			renderLine(mat.mulByVec(p1), mat.mulByVec(p2));
+			//delete(p1);
+			//delete(p2);
 		}
-		delete(mat);
+		//delete(mat);
 	}
 
-	void renderLine(Vector4f * p1, Vector4f * p2){
-		int x1 = (int)round(p1->vec[0]);
-		int y1 = (int)round(p1->vec[1]);
-		int x2 = (int)round(p2->vec[0]);
-		int y2 = (int)round(p2->vec[1]);
+	void renderLine(Vector4f &p1, Vector4f &p2){
+		int x1 = (int)round(p1.vec[0]);
+		int y1 = (int)round(p1.vec[1]);
+		int x2 = (int)round(p2.vec[0]);
+		int y2 = (int)round(p2.vec[1]);
 
 		bool uhel = (abs(y2 - y1) > abs(x2 - x1)); //>45°
 		if (uhel){
@@ -417,11 +433,11 @@ public:
 		}
 	}
 
-	void renderPoint(Vector4f * vec){
+	void renderPoint(Vector4f &vec){
 		int tmp = (int)(pointSize / 2);
 		for (int i = -tmp; i <= tmp; i++){
 			for (int j = -tmp; j <= tmp; j++){
-				setPixel((int)(vec->vec[0] + i), (int)(vec->vec[1] + j), currColor);
+				setPixel((int)(vec.vec[0] + i), (int)(vec.vec[1] + j), currColor);
 			}
 		}
 	}
@@ -431,55 +447,58 @@ public:
 	//------------------------------------------------------------------
 
 	void drawPoints(){
-		Matrix4f* mat = computeTransformation();
+		Matrix4f mat = computeTransformation();
 		for (size_t i = 0; i < vertexBuffer.size(); i++)
 		{
-			Vector4f * vec = mat->mulByVec(&vertexBuffer[i]);
+			Vector4f  vec = mat.mulByVec(vertexBuffer[i]);
 			renderPoint(vec);
-			delete(vec);
+			//delete(vec);
 		}
-		delete(mat);
+		//delete(mat);
 	}
 
 	void drawLines(){
-		Matrix4f* mat = computeTransformation();
+		Matrix4f mat = computeTransformation();
 		for (size_t i = 0; i < vertexBuffer.size(); i += 2)
 		{
-			Vector4f * vec1 = mat->mulByVec(&vertexBuffer[i]);
-			Vector4f * vec2 = mat->mulByVec(&vertexBuffer[i + 1]);
+			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
+			Vector4f vec2 = mat.mulByVec(vertexBuffer[i + 1]);
 			renderLine(vec1, vec2);
+			//delete(vec1);
+			//delete(vec2);
 		}
+		//delete(mat);
 	}
 
 	void drawStrip(){
-		Matrix4f* mat = computeTransformation();
+		Matrix4f mat = computeTransformation();
 		for (size_t i = 0; i < vertexBuffer.size() - 1; i++)
 		{
-			Vector4f * vec1 = mat->mulByVec(&vertexBuffer[i]);
-			Vector4f * vec2 = mat->mulByVec(&vertexBuffer[i + 1]);
+			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
+			Vector4f vec2 = mat.mulByVec(vertexBuffer[i + 1]);
 			renderLine(vec1, vec2);
-			delete(vec1);
-			delete(vec2);
+			//delete(vec1);
+			//delete(vec2);
 		}
-		delete(mat);
+		//delete(mat);
 	}
 
 	void drawLoop(){
-		Matrix4f* mat = computeTransformation();
+		Matrix4f mat = computeTransformation();
 		for (size_t i = 0; i < vertexBuffer.size() - 1; i++)
 		{
-			Vector4f * vec1 = mat->mulByVec(&vertexBuffer[i]);
-			Vector4f * vec2 = mat->mulByVec(&vertexBuffer[i + 1]);
+			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
+			Vector4f vec2 = mat.mulByVec(vertexBuffer[i + 1]);
 			renderLine(vec1, vec2);
-			delete(vec1);
-			delete(vec2);
+			//delete(vec1);
+			//delete(vec2);
 		}
-		Vector4f * vec1 = mat->mulByVec(&vertexBuffer.back());
-		Vector4f * vec2 = mat->mulByVec(&vertexBuffer.front());
+		Vector4f vec1 = mat.mulByVec(vertexBuffer.back());
+		Vector4f vec2 = mat.mulByVec(vertexBuffer.front());
 		renderLine(vec1, vec2);
-		delete(vec1);
-		delete(vec2);
-		delete(mat);
+		//delete(vec1);
+		//delete(vec2);
+		//delete(mat);
 	}
 
 };

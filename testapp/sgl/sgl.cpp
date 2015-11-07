@@ -116,7 +116,7 @@ void sglDestroyContext(int id) {
 	if (id < 0 || id >= MAXCONTEXT || contextBuffer[id] == NULL){
 		throw  SGL_INVALID_VALUE;
 	}
-	contextBuffer[id]->~Context();
+	delete(contextBuffer[id]);// ->~Context();
 	contextBuffer[id] = NULL;
 }
 
@@ -232,7 +232,13 @@ void sglCircle(float x, float y, float z, float radius) {
 	if (radius < 0){
 		throw SGL_INVALID_VALUE;
 	}
-	contextBuffer[currContext]->renderCircle(new Vector4f(x, y, z, 1), radius);
+	Vector4f v;
+	v.vec[0] = x;
+	v.vec[1] = y;
+	v.vec[2] = z;
+	v.vec[3] = 1;
+
+	contextBuffer[currContext]->renderCircle(v, radius);
 }
 
 void sglEllipse(float x, float y, float z, float a, float b) {
@@ -242,9 +248,14 @@ void sglEllipse(float x, float y, float z, float a, float b) {
 	if (a < 0 || b < 0){
 		throw SGL_INVALID_VALUE;
 	}
-	contextBuffer[currContext]->renderEllipse(new Vector4f(x, y, z, 1), a, b);
+	Vector4f v;
+	v.vec[0] = x;
+	v.vec[1] = y;
+	v.vec[2] = z;
+	v.vec[3] = 1;
+	contextBuffer[currContext]->renderEllipse(v, a, b);
 	if ((contextBuffer[currContext]->getVertexDrawMode() & SGL_POINT) == SGL_POINT){
-		contextBuffer[currContext]->renderPoint(new Vector4f(x, y, z, 1));
+		contextBuffer[currContext]->renderPoint(v);
 	}
 }
 
@@ -255,7 +266,12 @@ void sglArc(float x, float y, float z, float radius, float from, float to) {
 	if (radius < 0){
 		throw SGL_INVALID_VALUE;
 	}
-	contextBuffer[currContext]->renderArc(new Vector4f(x, y, z, 1), radius, from, to);
+	Vector4f v;
+	v.vec[0] = x;
+	v.vec[1] = y;
+	v.vec[2] = z;
+	v.vec[3] = 1;
+	contextBuffer[currContext]->renderArc(v, radius, from, to);
 }
 
 //---------------------------------------------------------------------------
@@ -314,7 +330,7 @@ void sglMultMatrix(const float *matrix) {
 	if (transactionEnabled || contextBuffer[currContext] == NULL){
 		throw SGL_INVALID_OPERATION;
 	}
-	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself( new Matrix4f(matrix));
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(new Matrix4f(matrix));
 }
 
 void sglTranslate(float x, float y, float z) {
