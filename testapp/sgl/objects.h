@@ -22,6 +22,13 @@ public:
 		blue = B;
 	}
 
+	bool compare(Color clr){
+		if (clr.red == red&&clr.green == green&&clr.blue == blue){
+			return true;
+		}
+		return false;
+	}
+
 };
 
 class Vector4f{
@@ -64,7 +71,7 @@ public:
 		// identity matrix
 		for (int i = 0; i < 4; i++)
 		{
-			for (int j = i+1; j < 4; j++)
+			for (int j = i + 1; j < 4; j++)
 			{
 				m[j][i] = 0;
 				m[i][j] = 0;
@@ -304,10 +311,10 @@ public:
 	}
 
 	Matrix4f computeTransformation(){
-	//	projectionStack.top().toTerminal();
-	//	modelViewStack.top().toTerminal();
-	//	viewport.toTerminal();
-	//	cout << "=====" << endl;
+		//	projectionStack.top().toTerminal();
+		//	modelViewStack.top().toTerminal();
+		//	viewport.toTerminal();
+		//	cout << "=====" << endl;
 		Matrix4f tmp = projectionStack.top().mulByMatrix(modelViewStack.top());
 		return viewport.mulByMatrix(tmp);
 	}
@@ -324,10 +331,14 @@ public:
 		colorBuffer[((y)*width + x) * 3 + 2] = clr->blue;
 	}
 
+	Color getPixelColor(int x, int y){
+		return  Color(colorBuffer[((y)*width + x) * 3 + 0], colorBuffer[((y)*width + x) * 3 + 1], colorBuffer[((y)*width + x) * 3 + 2]);
+	}
+
 	void renderCircle(Vector4f &vec, float radii){
 		Matrix4f mat = computeTransformation();
-	//	mat->toTerminal();
-	//	cout << "*******************" << endl;
+		//	mat->toTerminal();
+		//	cout << "*******************" << endl;
 		float scale = std::sqrt(mat.m[0][0] * mat.m[1][1] - mat.m[1][0] * mat.m[0][1]);
 		Vector4f center = mat.mulByVec(vec);
 		int x, y, p;
@@ -378,10 +389,10 @@ public:
 	void renderArc(Vector4f &center, float radius, float from, float to){
 		Matrix4f mat = computeTransformation();
 
-		int numOfVert = ceil(40 * fabs(to - from) / (2 * M_PI))+1;
-		float step = (to - from) / (numOfVert-1);
+		int numOfVert = ceil(40 * fabs(to - from) / (2 * M_PI)) + 1;
+		float step = (to - from) / (numOfVert - 1);
 
-		for (int i = 0; i < numOfVert-1 ; i++){
+		for (int i = 0; i < numOfVert - 1; i++){
 			//Vector4f *p1 = new Vector4f(, , center.vec[2], 1);
 			//Vector4f *p2 = new Vector4f(, , center.vec[2], 1);
 			Vector4f p1, p2;
@@ -460,9 +471,7 @@ public:
 		{
 			Vector4f  vec = mat.mulByVec(vertexBuffer[i]);
 			renderPoint(vec);
-			//delete(vec);
 		}
-		//delete(mat);
 	}
 
 	void drawLines(){
@@ -472,10 +481,7 @@ public:
 			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
 			Vector4f vec2 = mat.mulByVec(vertexBuffer[i + 1]);
 			renderLine(vec1, vec2);
-			//delete(vec1);
-			//delete(vec2);
 		}
-		//delete(mat);
 	}
 
 	void drawStrip(){
@@ -485,10 +491,7 @@ public:
 			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
 			Vector4f vec2 = mat.mulByVec(vertexBuffer[i + 1]);
 			renderLine(vec1, vec2);
-			//delete(vec1);
-			//delete(vec2);
 		}
-		//delete(mat);
 	}
 
 	void drawLoop(){
@@ -498,51 +501,47 @@ public:
 			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
 			Vector4f vec2 = mat.mulByVec(vertexBuffer[i + 1]);
 			renderLine(vec1, vec2);
-			//delete(vec1);
-			//delete(vec2);
 		}
 		Vector4f vec1 = mat.mulByVec(vertexBuffer.back());
 		Vector4f vec2 = mat.mulByVec(vertexBuffer.front());
 		renderLine(vec1, vec2);
-		//delete(vec1);
-		//delete(vec2);
-		//delete(mat);
 	}
 
 	//------------------------------------------------------------------
 	//FILLED OBJECTS
 	//------------------------------------------------------------------
 
+	//TODO - zaokrouhlovani
 	void drawFilledLoop(){
 		std::vector<int> prus;
 		Matrix4f mat = computeTransformation();
-		int maxY=-INT_MIN, minY=INT_MAX;
+		int maxY = -INT_MIN, minY = INT_MAX;
 		for (size_t i = 0; i < vertexBuffer.size(); i++)
 		{
 			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
-			int y0 = ceil(vec1.vec[1]);
+			int y0 = ceil(vec1.vec[1]); //TODO
 			(maxY <= y0) ? maxY = y0 : y0;
 			(minY >= y0) ? minY = y0 : y0;
 		}
 		for (int y = maxY; y >= minY; y--)
 		{
 			prus.clear();
-			for (size_t i = 0; i < vertexBuffer.size() ; i++)
+			for (size_t i = 0; i < vertexBuffer.size(); i++)
 			{
 				Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
-				Vector4f vec2 = mat.mulByVec(vertexBuffer[(i == vertexBuffer.size()-1) ? 0 : i + 1]);
+				Vector4f vec2 = mat.mulByVec(vertexBuffer[(i == vertexBuffer.size() - 1) ? 0 : i + 1]);
 				Vector4f vec = vec2.minus(vec1);
 				float t = (y - vec1.vec[1]) / vec.vec[1];
-				if (t > 0 && t < 1){
+				if (t >= 0 && t < 1){	//TODO
 					float x = vec1.vec[0] + vec.vec[0] * t;
-					prus.push_back(ceil(x));
+					prus.push_back(ceil(x)); //TODO
 				}
 			}
 			std::sort(prus.begin(), prus.end());
 			if (prus.size() != 0){
-				for (size_t i = 0; i < prus.size()-1; i += 2)
+				for (size_t i = 0; i < prus.size() - 1; i += 2)
 				{
-					for (int x = prus[i]; x < prus[i+1]; x++)
+					for (int x = prus[i]; x < prus[i + 1]; x++)
 					{
 						setPixel(x, y, currColor);
 					}
@@ -552,5 +551,107 @@ public:
 		prus.clear();
 	}
 
+	void drawArcFilled(Vector4f &center, float radius, float from, float to){
+		int numOfVert = ceil(40 * fabs(to - from) / (2 * M_PI)) + 1;
+		float step = (to - from) / (numOfVert - 1);
+		vertexBuffer.clear();
+		for (int i = 0; i < numOfVert; i++){
+			Vector4f p1, p2;
+			p1.vec[0] = center.vec[0] + cos(from + i*step)*radius;
+			p1.vec[1] = center.vec[1] + sin(from + i*step)*radius;
+			p1.vec[2] = center.vec[2];
+			p1.vec[3] = 1;
+			vertexBuffer.push_back(p1);
+		}
+		vertexBuffer.push_back(center);
+		drawFilledLoop();
+		vertexBuffer.clear();
+	}
+
+	void drawEllipseFilled(Vector4f &center, float a, float b){
+		vertexBuffer.clear();
+		for (int i = 0; i < 40; i++)
+		{
+			float uhel = (float)(M_PI*i / 20.);
+			Vector4f p1;
+			p1.vec[0] = center.vec[0] + a*cos(uhel);
+			p1.vec[1] = center.vec[1] + b*sin(uhel);
+			p1.vec[2] = center.vec[2];
+			p1.vec[3] = 1;
+			vertexBuffer.push_back(p1);
+		}
+		drawFilledLoop();
+		vertexBuffer.clear();
+	}
+
+	void drawCircleFilled(Vector4f &vec, float radii){
+		float tmpred = currColor->red;
+		currColor->red = -1;
+		renderCircle(vec, radii);
+		currColor->red = tmpred;
+		Matrix4f mat = computeTransformation();
+		Vector4f center = mat.mulByVec(vec);
+		std::vector<Vector4f> seeds;
+		seeds.push_back(center);
+		Color clr = Color(-1, -1, -1);
+		Color clr2 = Color(-1, -1, -1);
+
+		int idx = 0;
+
+		do{
+			Vector4f seed = seeds.back();
+			seeds.pop_back();
+			// right
+			for (size_t i = seed.vec[0]; i < width - 1; i++)
+			{
+				setPixel(i, seed.vec[1], currColor);
+				//up
+				clr2 = getPixelColor(i, seed.vec[1] + 1);
+				clr = getPixelColor(i + 1, seed.vec[1] + 1);
+				if (clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr2.compare(*currColor)){
+					seeds.push_back(Vector4f(i, seed.vec[1] + 1, 0, 1));
+				}
+				//down
+				clr2 = getPixelColor(i, seed.vec[1] - 1);
+				clr = getPixelColor(i + 1, seed.vec[1] - 1);
+				if (clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr2.compare(*currColor)){
+					seeds.push_back(Vector4f(i, seed.vec[1] - 1, 0, 1));
+				}
+				//end
+				clr = getPixelColor(i + 1, seed.vec[1]);
+				if (clr.compare(Color(-1, currColor->green, currColor->blue))){
+					break;
+				}
+			}
+			// left
+			for (size_t i = seed.vec[0]; i >= 0; i--)
+			{
+				setPixel(i, seed.vec[1], currColor);
+				//up
+				clr2 = getPixelColor(i, seed.vec[1] + 1);
+				clr = getPixelColor(i - 1, seed.vec[1] + 1);
+				if (clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr2.compare(*currColor)){
+					seeds.push_back(Vector4f(i, seed.vec[1] + 1, 0, 1));
+				}
+				//down
+				clr2 = getPixelColor(i, seed.vec[1] - 1);
+				clr = getPixelColor(i - 1, seed.vec[1] - 1);
+				if (clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr2.compare(*currColor)){
+					seeds.push_back(Vector4f(i, seed.vec[1] - 1, 0, 1));
+				}
+				//end
+				clr = getPixelColor(i - 1, seed.vec[1]);
+				if (clr.compare(Color(-1, currColor->green, currColor->blue))){
+					break;
+				}
+			}
+
+			cout << seeds.size() << endl;
+			if (idx == 500){
+				break;
+			}
+			idx++;
+		} while (!seeds.empty());
+	}
 };
 

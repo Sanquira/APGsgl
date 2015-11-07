@@ -243,8 +243,12 @@ void sglCircle(float x, float y, float z, float radius) {
 	v.vec[1] = y;
 	v.vec[2] = z;
 	v.vec[3] = 1;
-
-	contextBuffer[currContext]->renderCircle(v, radius);
+	if (contextBuffer[currContext]->getAreaDrawMode() == SGL_FILL){
+		contextBuffer[currContext]->drawCircleFilled(v, radius);
+	}
+	else{
+		contextBuffer[currContext]->renderCircle(v, radius);
+	}
 }
 
 void sglEllipse(float x, float y, float z, float a, float b) {
@@ -259,6 +263,9 @@ void sglEllipse(float x, float y, float z, float a, float b) {
 	v.vec[1] = y;
 	v.vec[2] = z;
 	v.vec[3] = 1;
+	if (contextBuffer[currContext]->getAreaDrawMode() == SGL_FILL){
+		contextBuffer[currContext]->drawEllipseFilled(v, a, b);
+	}
 	contextBuffer[currContext]->renderEllipse(v, a, b);
 	if ((contextBuffer[currContext]->getVertexDrawMode() & SGL_POINT) == SGL_POINT){
 		contextBuffer[currContext]->renderPoint(v);
@@ -277,6 +284,10 @@ void sglArc(float x, float y, float z, float radius, float from, float to) {
 	v.vec[1] = y;
 	v.vec[2] = z;
 	v.vec[3] = 1;
+	if (contextBuffer[currContext]->getAreaDrawMode() == SGL_FILL){
+		contextBuffer[currContext]->drawArcFilled(v, radius, from, to);
+	}
+
 	contextBuffer[currContext]->renderArc(v, radius, from, to);
 }
 
