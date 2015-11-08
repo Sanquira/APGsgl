@@ -9,7 +9,6 @@
 
 //my includes
 //#include <vld.h>
-#include "objects.h"
 #include <algorithm>
 using namespace std;
 
@@ -26,15 +25,15 @@ using namespace std;
 #endif
 
 #ifdef TEST1
-#define TEST_1A
+//#define TEST_1A
 //#define TEST_1B
 //#define TEST_1C
 #endif
 
 #ifdef TEST2
 //#define TEST_2A
-#define TEST_2B
-//#define TEST_2C
+//#define TEST_2B
+#define TEST_2C
 //#define TEST_2D
 #endif
 
@@ -1190,7 +1189,7 @@ int main(int argc, char **argv)
 	sglSetContext(_contexts[0]);
 	sglClearColor(0, 0, 0, 1);
 	sglClear(SGL_COLOR_BUFFER_BIT);
-	for (int i = 0; i<1; i++){
+	for (int i = 0; i < 1; i++){
 		DrawTestScene1A();
 	}
 	WriteTGA("results/test1a.tga");
@@ -1221,7 +1220,7 @@ int main(int argc, char **argv)
 	sglSetContext(_contexts[2]);
 	sglClearColor(0, 0, 0, 1);
 	sglClear(SGL_COLOR_BUFFER_BIT);
-	for (int i = 0; i<1000; i++)
+	for (int i = 0; i < 1000; i++)
 		DrawTestScene1C();
 	WriteTGA("results/test1c.tga");
 	resultsInfo << "    test1c.png : " << timer.UserTime() << endl;
@@ -1241,7 +1240,7 @@ int main(int argc, char **argv)
 	sglClearColor(0, 0, 0, 1);
 	sglClear(SGL_COLOR_BUFFER_BIT);
 	//for(int i=0; i<150; i++) //TODO
-	for(int i=0; i<1; i++)
+	for (int i = 0; i < 1; i++)
 		DrawTestScene2A();
 	resultsInfo<<"    test2a.png : "<<timer.UserTime()<<endl;
 	WriteTGA("results/test2a.tga");
@@ -1260,7 +1259,7 @@ int main(int argc, char **argv)
 	//for (int i = 0; i<15; i++)
 	for (int i = 0; i < 1; i++)
 		DrawTestScene2B();
-	resultsInfo<<"    test2b.png : "<<timer.UserTime()<<endl;
+	resultsInfo << "    test2b.png : " << timer.UserTime() << endl;
 	WriteTGA("results/test2b.tga");
 
 	cout << "done in " << timer.UserTime() << " sec." << endl;
@@ -1273,8 +1272,9 @@ int main(int argc, char **argv)
 
 	sglSetContext(_contexts[5]);
 	sglClearColor(0, 0, 0, 1);
-	sglClear(SGL_COLOR_BUFFER_BIT|SGL_DEPTH_BUFFER_BIT);
-	for(int i=0; i<15; i++)
+	sglClear(SGL_COLOR_BUFFER_BIT | SGL_DEPTH_BUFFER_BIT);
+	//for (int i = 0; i<15; i++)
+	for (int i = 0; i < 1; i++)
 		DrawTestScene2C();
 	resultsInfo<<"    test2c.png : "<<timer.UserTime()<<endl;
 	WriteTGA("results/test2c.tga");
@@ -1495,4 +1495,4 @@ int main(int argc, char **argv)
 #endif
 
  return 0;
-}
+	}

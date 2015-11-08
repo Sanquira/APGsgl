@@ -7,7 +7,7 @@
 
 #include "sgl.h"
 //#include <vld.h>
-#include <objects.h>
+#include "objects.h"
 using namespace std;
 
 
@@ -87,7 +87,7 @@ void sglFinish(void) {
 		if (contextBuffer[i] != NULL)
 			delete(contextBuffer[i]);
 	}
-	delete [] contextBuffer;
+	delete[] contextBuffer;
 	cout << "sgl Finished" << endl;
 }
 
@@ -172,12 +172,12 @@ void sglClear(unsigned what) {
 		{
 			for (int j = 0; j < con->getHeight(); j++)
 			{
-				con->setPixel(i, j, con->getBcgColor());
+				con->setPixel(i, j, -std::numeric_limits<float>::infinity(), con->getBcgColor());
 			}
 		}
 	}
 	if ((what&SGL_DEPTH_BUFFER_BIT) == SGL_DEPTH_BUFFER_BIT){
-		// TODO - implementovat az bude implementovany depth buffer
+		con->cleanDepthBuffer();
 	}
 }
 
@@ -423,9 +423,24 @@ void sglOrtho(float left, float right, float bottom, float top, float near, floa
 	delete(mat);
 }
 
-//TODO - zatim neni potreba
 void sglFrustum(float left, float right, float bottom, float top, float near, float far) {
-	cout << "sglFrustum need to be implemented" << endl;
+	if (transactionEnabled || contextBuffer[currContext] == NULL){
+		throw SGL_INVALID_OPERATION;
+	}
+	if (near <= 0 || far <= 0 || left == right || top == bottom || far == near){
+		throw SGL_INVALID_VALUE;
+	}
+	Matrix4f* mat = new Matrix4f();
+	mat->m[0][0] = (2 * near) / (right - left);
+	mat->m[0][2] = (right + left) / (right - left);
+	mat->m[1][1] = (2 * near) / (top - bottom);
+	mat->m[1][2] = (top + bottom) / (top - bottom);
+	mat->m[2][2] = -(far + near) / (far - near);
+	mat->m[2][3] = -(2*far * near) / (far - near);
+	mat->m[3][2] = -1;
+	mat->m[3][3] = 0;
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(mat);
+	delete(mat);
 }
 
 void sglViewport(int x, int y, int width, int height) {
