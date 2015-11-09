@@ -234,7 +234,7 @@ public:
 	}
 
 	void pushMatrix(){
-		Matrix4f mat;// = new Matrix4f();
+		Matrix4f mat;
 		mat.mulByMatrixToItself(&currMatrixStack->top());
 		currMatrixStack->push(mat);
 	}
@@ -413,8 +413,6 @@ public:
 		float step = (to - from) / (numOfVert - 1);
 
 		for (int i = 0; i < numOfVert - 1; i++){
-			//Vector4f *p1 = new Vector4f(, , center.vec[2], 1);
-			//Vector4f *p2 = new Vector4f(, , center.vec[2], 1);
 			Vector4f p1, p2;
 			p1.vec[0] = center.vec[0] + cos(from + i*step)*radius;
 			p1.vec[1] = center.vec[1] + sin(from + i*step)*radius;
@@ -425,10 +423,7 @@ public:
 			p2.vec[2] = center.vec[2];
 			p2.vec[3] = 1;
 			renderLine(mat.mulByVec(p1), mat.mulByVec(p2));
-			//delete(p1);
-			//delete(p2);
 		}
-		//delete(mat);
 	}
 
 	void renderLine(Vector4f &p1, Vector4f &p2){

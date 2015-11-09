@@ -84,8 +84,10 @@ void sglInit(void) {
 void sglFinish(void) {
 	for (int i = 0; i < MAXCONTEXT; i++)
 	{
-		if (contextBuffer[i] != NULL)
+		if (contextBuffer[i] != NULL) {
 			delete(contextBuffer[i]);
+			contextBuffer[i] = NULL;
+		}
 	}
 	delete[] contextBuffer;
 	cout << "sgl Finished" << endl;
