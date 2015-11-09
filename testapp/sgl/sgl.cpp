@@ -399,7 +399,7 @@ void sglRotateY(float angle) {
 	Matrix4f* rotY = new Matrix4f();
 	rotY->m[0][0] = cos(angle);
 	rotY->m[0][2] = -sin(angle);
-	rotY->m[0][2] = sin(angle);
+	rotY->m[2][0] = sin(angle);
 	rotY->m[2][2] = cos(angle);
 	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(rotY);
 	delete(rotY);
