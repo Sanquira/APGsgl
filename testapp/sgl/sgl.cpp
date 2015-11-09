@@ -71,7 +71,6 @@ bool transactionEnabled = false;
 // Initialization functions
 //---------------------------------------------------------------------------
 
-//TODO - mam pocit ze tohle nestaci
 void sglInit(void) {
 	contextBuffer = new Context*[MAXCONTEXT];
 	for (int i = 0; i < MAXCONTEXT; i++)
@@ -80,7 +79,6 @@ void sglInit(void) {
 	}
 }
 
-//TODO - ti same zde
 void sglFinish(void) {
 	for (int i = 0; i < MAXCONTEXT; i++)
 	{
@@ -344,7 +342,7 @@ void sglLoadMatrix(const float *matrix) {
 	contextBuffer[currContext]->getMatrixStack()->top() = Matrix4f(matrix);
 }
 
-//TODO - podivne instrukce
+//TODO - podivne instrukce?
 void sglMultMatrix(const float *matrix) {
 	if (transactionEnabled || contextBuffer[currContext] == NULL){
 		throw SGL_INVALID_OPERATION;
