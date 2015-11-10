@@ -376,7 +376,7 @@ public:
 			}
 			x += 1;
 		}
-		if (x == y) {// 45° pixely, jen 4
+		if (x == y) {// 45Â° pixely, jen 4
 			symetricPoints(x, y, &center);
 		}
 		//delete(mat);
@@ -436,7 +436,7 @@ public:
 
 		float depth;
 
-		bool uhel = (abs(y2 - y1) > abs(x2 - x1)); //>45°
+		bool uhel = (abs(y2 - y1) > abs(x2 - x1)); //>45Â°
 		if (uhel){
 			std::swap(x1, y1);
 			std::swap(x2, y2);
@@ -556,16 +556,26 @@ public:
 			prus.clear();
 			for (size_t i = 0; i < vertexBuffer.size(); i++)
 			{
+				Vector4f vec0 = mat.mulByVec(vertexBuffer[(i==0)?vertexBuffer.size()-1:i-1]);
 				Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
 				Vector4f vec2 = mat.mulByVec(vertexBuffer[(i == vertexBuffer.size() - 1) ? 0 : i + 1]);
+				vec0.homoNorm();
 				vec1.homoNorm();
 				vec2.homoNorm();
 				Vector4f vec = vec2.minus(vec1);
 				float t = (y - vec1.vec[1]) / vec.vec[1];
-				if (t > 0 && t < 1){	//TODO - meze paramteru usecky
-					float x = vec1.vec[0] + vec.vec[0] * t;
-					float z = vec1.vec[2] + vec.vec[2] * t;
-					prus.push_back(Vector4f(ceil(x), (float)y, z, 1)); //TODO
+				if((vec1.vec[1]<vec0.vec[1]&&vec1.vec[1]<vec2.vec[0])||(vec1.vec[1]>vec0.vec[1]&&vec1.vec[1]>vec2.vec[0])){
+					if (t > 0 && t < 1){	//TODO - meze paramteru usecky
+						float x = vec1.vec[0] + vec.vec[0] * t;
+						float z = vec1.vec[2] + vec.vec[2] * t;
+						prus.push_back(Vector4f(ceil(x), (float)y, z, 1)); //TODO
+					}
+				}else{
+					if (t >= 0 && t < 1){	//TODO - meze paramteru usecky
+						float x = vec1.vec[0] + vec.vec[0] * t;
+						float z = vec1.vec[2] + vec.vec[2] * t;
+						prus.push_back(Vector4f(ceil(x), (float)y, z, 1)); //TODO
+					}
 				}
 			}
 			std::sort(prus.begin(), prus.end(), compareVector4fX);
