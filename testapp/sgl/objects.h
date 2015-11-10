@@ -564,7 +564,7 @@ public:
 				vec2.homoNorm();
 				Vector4f vec = vec2.minus(vec1);
 				float t = (y - vec1.vec[1]) / vec.vec[1];
-				if((vec1.vec[1]<vec0.vec[1]&&vec1.vec[1]<vec2.vec[0])||(vec1.vec[1]>vec0.vec[1]&&vec1.vec[1]>vec2.vec[0])){
+				if((vec1.vec[1]<vec0.vec[1]&&vec1.vec[1]<vec2.vec[1])||(vec1.vec[1]>vec0.vec[1]&&vec1.vec[1]>vec2.vec[1])){
 					if (t > 0 && t < 1){	//TODO - meze paramteru usecky
 						float x = vec1.vec[0] + vec.vec[0] * t;
 						float z = vec1.vec[2] + vec.vec[2] * t;
