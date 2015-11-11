@@ -6,6 +6,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+testapp/results/desc.neon
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -229,3 +230,7 @@ _Pvt_Extensions
 # FAKE - F# Make
 .fake/
 
+testapp/results/desc.neon
+*.zip
+*.tga
+*.neon

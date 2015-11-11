@@ -6,7 +6,7 @@
 //---------------------------------------------------------------------------
 
 #include "sgl.h"
-#include <objects.h>
+#include "objects.h"
 using namespace std;
 
 
@@ -70,7 +70,6 @@ bool transactionEnabled = false;
 // Initialization functions
 //---------------------------------------------------------------------------
 
-//TODO - mam pocit ze tohle nestaci
 void sglInit(void) {
 	contextBuffer = new Context*[MAXCONTEXT];
 	for (int i = 0; i < MAXCONTEXT; i++)
@@ -79,12 +78,13 @@ void sglInit(void) {
 	}
 }
 
-//TODO - ti same zde
 void sglFinish(void) {
 	for (int i = 0; i < MAXCONTEXT; i++)
 	{
-		if (contextBuffer[i] != NULL)
+		if (contextBuffer[i] != NULL) {
 			delete(contextBuffer[i]);
+			contextBuffer[i] = NULL;
+		}
 	}
 	delete[] contextBuffer;
 	cout << "sgl Finished" << endl;
@@ -115,7 +115,7 @@ void sglDestroyContext(int id) {
 	if (id < 0 || id >= MAXCONTEXT || contextBuffer[id] == NULL){
 		throw  SGL_INVALID_VALUE;
 	}
-	contextBuffer[id]->~Context();
+	delete(contextBuffer[id]);
 	contextBuffer[id] = NULL;
 }
 
@@ -171,12 +171,12 @@ void sglClear(unsigned what) {
 		{
 			for (int j = 0; j < con->getHeight(); j++)
 			{
-				con->setPixel(i, j, *(con->getBcgColor()));
+				con->setPixel(i, j, -std::numeric_limits<float>::infinity(), con->getBcgColor());
 			}
 		}
 	}
 	if ((what&SGL_DEPTH_BUFFER_BIT) == SGL_DEPTH_BUFFER_BIT){
-		// TODO - implementovat az bude implementovany depth buffer
+		con->cleanDepthBuffer();
 	}
 }
 
@@ -209,6 +209,12 @@ void sglEnd(void) {
 	if (con->getVertexDrawMode() == SGL_LINE_LOOP){
 		con->drawLoop();
 	}
+	if (con->getVertexDrawMode() == SGL_POLYGON){
+		if (con->getAreaDrawMode() == SGL_FILL){
+			con->drawFilledLoop();
+		}
+		con->drawLoop();
+	}
 	con->clearVertexBuffer();
 }
 
@@ -231,7 +237,17 @@ void sglCircle(float x, float y, float z, float radius) {
 	if (radius < 0){
 		throw SGL_INVALID_VALUE;
 	}
-	contextBuffer[currContext]->renderCircle(Vector4f(x, y, z, 1), radius);
+	Vector4f v;
+	v.x = x;
+	v.y = y;
+	v.z = z;
+	v.w = 1;
+	if (contextBuffer[currContext]->getAreaDrawMode() == SGL_FILL){
+		contextBuffer[currContext]->drawCircleFilled(v, radius);
+	}
+	else{
+		contextBuffer[currContext]->renderCircle(v, radius);
+	}
 }
 
 void sglEllipse(float x, float y, float z, float a, float b) {
@@ -241,9 +257,17 @@ void sglEllipse(float x, float y, float z, float a, float b) {
 	if (a < 0 || b < 0){
 		throw SGL_INVALID_VALUE;
 	}
-	contextBuffer[currContext]->renderEllipse(Vector4f(x, y, z, 1), a, b);
+	Vector4f v;
+	v.x = x;
+	v.y = y;
+	v.z = z;
+	v.w = 1;
+	if (contextBuffer[currContext]->getAreaDrawMode() == SGL_FILL){
+		contextBuffer[currContext]->drawEllipseFilled(v, a, b);
+	}
+	contextBuffer[currContext]->renderEllipse(v, a, b);
 	if ((contextBuffer[currContext]->getVertexDrawMode() & SGL_POINT) == SGL_POINT){
-		contextBuffer[currContext]->renderPoint(Vector4f(x, y, z, 1));
+		contextBuffer[currContext]->renderPoint(v);
 	}
 }
 
@@ -254,7 +278,16 @@ void sglArc(float x, float y, float z, float radius, float from, float to) {
 	if (radius < 0){
 		throw SGL_INVALID_VALUE;
 	}
-	contextBuffer[currContext]->renderArc(Vector4f(x, y, z, 1), radius, from, to);
+	Vector4f v;
+	v.x = x;
+	v.y = y;
+	v.z = z;
+	v.w = 1;
+	if (contextBuffer[currContext]->getAreaDrawMode() == SGL_FILL){
+		contextBuffer[currContext]->drawArcFilled(v, radius, from, to);
+	}
+
+	contextBuffer[currContext]->renderArc(v, radius, from, to);
 }
 
 //---------------------------------------------------------------------------
@@ -308,34 +341,34 @@ void sglLoadMatrix(const float *matrix) {
 	contextBuffer[currContext]->getMatrixStack()->top() = Matrix4f(matrix);
 }
 
-//TODO - podivne instrukce
 void sglMultMatrix(const float *matrix) {
 	if (transactionEnabled || contextBuffer[currContext] == NULL){
 		throw SGL_INVALID_OPERATION;
 	}
-	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(&Matrix4f(matrix));
+	Matrix4f mul(matrix);
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&mul);
 }
 
 void sglTranslate(float x, float y, float z) {
 	if (transactionEnabled || contextBuffer[currContext] == NULL){
 		throw SGL_INVALID_OPERATION;
 	}
-	Matrix4f* tr = new Matrix4f();
-	tr->getMatrix()[0][3] = x;
-	tr->getMatrix()[1][3] = y;
-	tr->getMatrix()[2][3] = z;
-	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(tr);
+	Matrix4f tr;
+	tr.m[0][3] = x;
+	tr.m[1][3] = y;
+	tr.m[2][3] = z;
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&tr);
 }
 
 void sglScale(float scalex, float scaley, float scalez) {
 	if (transactionEnabled || contextBuffer[currContext] == NULL){
 		throw SGL_INVALID_OPERATION;
 	}
-	Matrix4f* sc = new Matrix4f();
-	sc->getMatrix()[0][0] = scalex;
-	sc->getMatrix()[1][1] = scaley;
-	sc->getMatrix()[2][2] = scalez;
-	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(sc);
+	Matrix4f sc;
+	sc.m[0][0] = scalex;
+	sc.m[1][1] = scaley;
+	sc.m[2][2] = scalez;
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&sc);
 }
 
 void sglRotate2D(float angle, float centerx, float centery) {
@@ -344,12 +377,12 @@ void sglRotate2D(float angle, float centerx, float centery) {
 	}
 	sglTranslate(centerx, centery, 0);
 
-	Matrix4f* rotZ = new Matrix4f();
-	rotZ->getMatrix()[0][0] = cos(angle);
-	rotZ->getMatrix()[1][0] = sin(angle);
-	rotZ->getMatrix()[0][1] = -sin(angle);
-	rotZ->getMatrix()[1][1] = cos(angle);
-	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(rotZ);
+	Matrix4f rotZ;
+	rotZ.m[0][0] = cos(angle);
+	rotZ.m[1][0] = sin(angle);
+	rotZ.m[0][1] = -sin(angle);
+	rotZ.m[1][1] = cos(angle);
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&rotZ);
 
 	sglTranslate(-centerx, -centery, 0);
 }
@@ -359,12 +392,12 @@ void sglRotateY(float angle) {
 		throw SGL_INVALID_OPERATION;
 	}
 
-	Matrix4f* rotY = new Matrix4f();
-	rotY->getMatrix()[0][0] = cos(angle);
-	rotY->getMatrix()[0][2] = -sin(angle);
-	rotY->getMatrix()[0][2] = sin(angle);
-	rotY->getMatrix()[2][2] = cos(angle);
-	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(rotY);
+	Matrix4f rotY;
+	rotY.m[0][0] = cos(angle);
+	rotY.m[0][2] = -sin(angle);
+	rotY.m[2][0] = sin(angle);
+	rotY.m[2][2] = cos(angle);
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&rotY);
 }
 
 void sglOrtho(float left, float right, float bottom, float top, float near, float far) {
@@ -374,19 +407,33 @@ void sglOrtho(float left, float right, float bottom, float top, float near, floa
 	if (right == left || top == bottom || far == near){
 		throw SGL_INVALID_VALUE;
 	}
-	Matrix4f* mat = new Matrix4f();
-	mat->getMatrix()[0][0] = 2 / (right - left);
-	mat->getMatrix()[1][1] = 2 / (top - bottom);
-	mat->getMatrix()[2][2] = 2 / (far - near);
-	mat->getMatrix()[0][3] = -(right + left) / (right - left);
-	mat->getMatrix()[1][3] = -(top + bottom) / (top - bottom);
-	mat->getMatrix()[2][3] = -(far + near) / (far - near);
-	contextBuffer[currContext]->getMatrix().mulByMatrixToItself(mat);
+	Matrix4f mat;
+	mat.m[0][0] = 2 / (right - left);
+	mat.m[1][1] = 2 / (top - bottom);
+	mat.m[2][2] = 2 / (far - near);
+	mat.m[0][3] = -(right + left) / (right - left);
+	mat.m[1][3] = -(top + bottom) / (top - bottom);
+	mat.m[2][3] = -(far + near) / (far - near);
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&mat);
 }
 
-//TODO - zatim neni potreba
 void sglFrustum(float left, float right, float bottom, float top, float near, float far) {
-	cout << "sglFrustum need to be implemented" << endl;
+	if (transactionEnabled || contextBuffer[currContext] == NULL){
+		throw SGL_INVALID_OPERATION;
+	}
+	if (near <= 0 || far <= 0 || left == right || top == bottom || far == near){
+		throw SGL_INVALID_VALUE;
+	}
+	Matrix4f mat;
+	mat.m[0][0] = (2 * near) / (right - left);
+	mat.m[0][2] = (right + left) / (right - left);
+	mat.m[1][1] = (2 * near) / (top - bottom);
+	mat.m[1][2] = (top + bottom) / (top - bottom);
+	mat.m[2][2] = -(far + near) / (far - near);
+	mat.m[2][3] = -(2*far * near) / (far - near);
+	mat.m[3][2] = -1;
+	mat.m[3][3] = 0;
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&mat);
 }
 
 void sglViewport(int x, int y, int width, int height) {
@@ -396,12 +443,12 @@ void sglViewport(int x, int y, int width, int height) {
 	if (width < 0 || height < 0){
 		throw SGL_INVALID_VALUE;
 	}
-	Matrix4f* mat = new Matrix4f();
-	mat->getMatrix()[0][0] = (float)width / 2;
-	mat->getMatrix()[1][1] = (float)height / 2;
-	mat->getMatrix()[0][3] = x + (float)width / 2;
-	mat->getMatrix()[1][3] = y + (float)height / 2;
-	contextBuffer[currContext]->setViewport(*mat);
+	Matrix4f mat;
+	mat.m[0][0] = (float)width / 2;
+	mat.m[1][1] = (float)height / 2;
+	mat.m[0][3] = x + (float)width / 2;
+	mat.m[1][3] = y + (float)height / 2;
+	contextBuffer[currContext]->setViewport(mat);
 }
 
 //---------------------------------------------------------------------------
@@ -423,15 +470,16 @@ void sglAreaMode(sglEAreaMode mode) {
 	if ((mode & ~(SGL_POINT | SGL_LINE | SGL_FILL)) != 0){
 		throw SGL_INVALID_ENUM;
 	}
-	if ((mode&SGL_POINT) == SGL_POINT){
-		contextBuffer[currContext]->setAreaDrawMode(SGL_POINT);
-		return;
-	}
-	if ((mode&SGL_LINE) == SGL_LINE){
+
+	if ((mode & SGL_LINE) == SGL_LINE){
 		contextBuffer[currContext]->setAreaDrawMode(SGL_LINE);
 		return;
 	}
-	contextBuffer[currContext]->setAreaDrawMode(SGL_FILL);
+	if ((mode & SGL_FILL) == SGL_FILL){
+		contextBuffer[currContext]->setAreaDrawMode(SGL_FILL);
+		return;
+	}
+	contextBuffer[currContext]->setAreaDrawMode(SGL_POINT);
 }
 
 void sglPointSize(float size) {
