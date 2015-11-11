@@ -231,3 +231,6 @@ _Pvt_Extensions
 .fake/
 
 testapp/results/desc.neon
+*.zip
+*.tga
+*.neon

@@ -1,10 +1,14 @@
+<<<<<<< HEAD
 #define _USE_MATH_DEFINES
+=======
+>>>>>>> parent of 09237d8... MATH_DEFINES by melo byt prvni
 
 #include <cstdlib>
 #include <iostream>
 #include <vector>
 #include <stack>
 #include <sgl.h>
+#define _USE_MATH_DEFINES
 #include <cmath>
 #include <algorithm>
 #include <cstring>
