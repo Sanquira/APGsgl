@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-#define _USE_MATH_DEFINES
-=======
->>>>>>> parent of 09237d8... MATH_DEFINES by melo byt prvni
-
 #define _USE_MATH_DEFINES
 
 #include <cstdlib>
