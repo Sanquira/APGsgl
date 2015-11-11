@@ -6,7 +6,6 @@
 //---------------------------------------------------------------------------
 
 #include "sgl.h"
-//#include <vld.h>
 #include "objects.h"
 using namespace std;
 
@@ -116,7 +115,7 @@ void sglDestroyContext(int id) {
 	if (id < 0 || id >= MAXCONTEXT || contextBuffer[id] == NULL){
 		throw  SGL_INVALID_VALUE;
 	}
-	delete(contextBuffer[id]);// ->~Context();
+	delete(contextBuffer[id]);
 	contextBuffer[id] = NULL;
 }
 
@@ -239,10 +238,10 @@ void sglCircle(float x, float y, float z, float radius) {
 		throw SGL_INVALID_VALUE;
 	}
 	Vector4f v;
-	v.vec[0] = x;
-	v.vec[1] = y;
-	v.vec[2] = z;
-	v.vec[3] = 1;
+	v.x = x;
+	v.y = y;
+	v.z = z;
+	v.w = 1;
 	if (contextBuffer[currContext]->getAreaDrawMode() == SGL_FILL){
 		contextBuffer[currContext]->drawCircleFilled(v, radius);
 	}
@@ -259,10 +258,10 @@ void sglEllipse(float x, float y, float z, float a, float b) {
 		throw SGL_INVALID_VALUE;
 	}
 	Vector4f v;
-	v.vec[0] = x;
-	v.vec[1] = y;
-	v.vec[2] = z;
-	v.vec[3] = 1;
+	v.x = x;
+	v.y = y;
+	v.z = z;
+	v.w = 1;
 	if (contextBuffer[currContext]->getAreaDrawMode() == SGL_FILL){
 		contextBuffer[currContext]->drawEllipseFilled(v, a, b);
 	}
@@ -280,10 +279,10 @@ void sglArc(float x, float y, float z, float radius, float from, float to) {
 		throw SGL_INVALID_VALUE;
 	}
 	Vector4f v;
-	v.vec[0] = x;
-	v.vec[1] = y;
-	v.vec[2] = z;
-	v.vec[3] = 1;
+	v.x = x;
+	v.y = y;
+	v.z = z;
+	v.w = 1;
 	if (contextBuffer[currContext]->getAreaDrawMode() == SGL_FILL){
 		contextBuffer[currContext]->drawArcFilled(v, radius, from, to);
 	}
@@ -342,36 +341,34 @@ void sglLoadMatrix(const float *matrix) {
 	contextBuffer[currContext]->getMatrixStack()->top() = Matrix4f(matrix);
 }
 
-//TODO - podivne instrukce?
 void sglMultMatrix(const float *matrix) {
 	if (transactionEnabled || contextBuffer[currContext] == NULL){
 		throw SGL_INVALID_OPERATION;
 	}
-	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(new Matrix4f(matrix));
+	Matrix4f mul(matrix);
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&mul);
 }
 
 void sglTranslate(float x, float y, float z) {
 	if (transactionEnabled || contextBuffer[currContext] == NULL){
 		throw SGL_INVALID_OPERATION;
 	}
-	Matrix4f* tr = new Matrix4f();
-	tr->m[0][3] = x;
-	tr->m[1][3] = y;
-	tr->m[2][3] = z;
-	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(tr);
-	delete(tr);
+	Matrix4f tr;
+	tr.m[0][3] = x;
+	tr.m[1][3] = y;
+	tr.m[2][3] = z;
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&tr);
 }
 
 void sglScale(float scalex, float scaley, float scalez) {
 	if (transactionEnabled || contextBuffer[currContext] == NULL){
 		throw SGL_INVALID_OPERATION;
 	}
-	Matrix4f* sc = new Matrix4f();
-	sc->m[0][0] = scalex;
-	sc->m[1][1] = scaley;
-	sc->m[2][2] = scalez;
-	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(sc);
-	delete(sc);
+	Matrix4f sc;
+	sc.m[0][0] = scalex;
+	sc.m[1][1] = scaley;
+	sc.m[2][2] = scalez;
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&sc);
 }
 
 void sglRotate2D(float angle, float centerx, float centery) {
@@ -380,13 +377,12 @@ void sglRotate2D(float angle, float centerx, float centery) {
 	}
 	sglTranslate(centerx, centery, 0);
 
-	Matrix4f* rotZ = new Matrix4f();
-	rotZ->m[0][0] = cos(angle);
-	rotZ->m[1][0] = sin(angle);
-	rotZ->m[0][1] = -sin(angle);
-	rotZ->m[1][1] = cos(angle);
-	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(rotZ);
-	delete(rotZ);
+	Matrix4f rotZ;
+	rotZ.m[0][0] = cos(angle);
+	rotZ.m[1][0] = sin(angle);
+	rotZ.m[0][1] = -sin(angle);
+	rotZ.m[1][1] = cos(angle);
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&rotZ);
 
 	sglTranslate(-centerx, -centery, 0);
 }
@@ -396,13 +392,12 @@ void sglRotateY(float angle) {
 		throw SGL_INVALID_OPERATION;
 	}
 
-	Matrix4f* rotY = new Matrix4f();
-	rotY->m[0][0] = cos(angle);
-	rotY->m[0][2] = -sin(angle);
-	rotY->m[2][0] = sin(angle);
-	rotY->m[2][2] = cos(angle);
-	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(rotY);
-	delete(rotY);
+	Matrix4f rotY;
+	rotY.m[0][0] = cos(angle);
+	rotY.m[0][2] = -sin(angle);
+	rotY.m[2][0] = sin(angle);
+	rotY.m[2][2] = cos(angle);
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&rotY);
 }
 
 void sglOrtho(float left, float right, float bottom, float top, float near, float far) {
@@ -412,15 +407,14 @@ void sglOrtho(float left, float right, float bottom, float top, float near, floa
 	if (right == left || top == bottom || far == near){
 		throw SGL_INVALID_VALUE;
 	}
-	Matrix4f* mat = new Matrix4f();
-	mat->m[0][0] = 2 / (right - left);
-	mat->m[1][1] = 2 / (top - bottom);
-	mat->m[2][2] = 2 / (far - near);
-	mat->m[0][3] = -(right + left) / (right - left);
-	mat->m[1][3] = -(top + bottom) / (top - bottom);
-	mat->m[2][3] = -(far + near) / (far - near);
-	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(mat);
-	delete(mat);
+	Matrix4f mat;
+	mat.m[0][0] = 2 / (right - left);
+	mat.m[1][1] = 2 / (top - bottom);
+	mat.m[2][2] = 2 / (far - near);
+	mat.m[0][3] = -(right + left) / (right - left);
+	mat.m[1][3] = -(top + bottom) / (top - bottom);
+	mat.m[2][3] = -(far + near) / (far - near);
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&mat);
 }
 
 void sglFrustum(float left, float right, float bottom, float top, float near, float far) {
@@ -430,17 +424,16 @@ void sglFrustum(float left, float right, float bottom, float top, float near, fl
 	if (near <= 0 || far <= 0 || left == right || top == bottom || far == near){
 		throw SGL_INVALID_VALUE;
 	}
-	Matrix4f* mat = new Matrix4f();
-	mat->m[0][0] = (2 * near) / (right - left);
-	mat->m[0][2] = (right + left) / (right - left);
-	mat->m[1][1] = (2 * near) / (top - bottom);
-	mat->m[1][2] = (top + bottom) / (top - bottom);
-	mat->m[2][2] = -(far + near) / (far - near);
-	mat->m[2][3] = -(2*far * near) / (far - near);
-	mat->m[3][2] = -1;
-	mat->m[3][3] = 0;
-	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(mat);
-	delete(mat);
+	Matrix4f mat;
+	mat.m[0][0] = (2 * near) / (right - left);
+	mat.m[0][2] = (right + left) / (right - left);
+	mat.m[1][1] = (2 * near) / (top - bottom);
+	mat.m[1][2] = (top + bottom) / (top - bottom);
+	mat.m[2][2] = -(far + near) / (far - near);
+	mat.m[2][3] = -(2*far * near) / (far - near);
+	mat.m[3][2] = -1;
+	mat.m[3][3] = 0;
+	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&mat);
 }
 
 void sglViewport(int x, int y, int width, int height) {
@@ -450,13 +443,12 @@ void sglViewport(int x, int y, int width, int height) {
 	if (width < 0 || height < 0){
 		throw SGL_INVALID_VALUE;
 	}
-	Matrix4f* mat = new Matrix4f();
-	mat->m[0][0] = (float)width / 2;
-	mat->m[1][1] = (float)height / 2;
-	mat->m[0][3] = x + (float)width / 2;
-	mat->m[1][3] = y + (float)height / 2;
-	contextBuffer[currContext]->setViewport(*mat);
-	delete(mat);
+	Matrix4f mat;
+	mat.m[0][0] = (float)width / 2;
+	mat.m[1][1] = (float)height / 2;
+	mat.m[0][3] = x + (float)width / 2;
+	mat.m[1][3] = y + (float)height / 2;
+	contextBuffer[currContext]->setViewport(mat);
 }
 
 //---------------------------------------------------------------------------
