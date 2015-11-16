@@ -451,10 +451,10 @@ public:
 			std::swap(y1, y2);
 		}
 
-		int dx = x2 - x1;
-		int dy = abs(y2 - y1);
+		int dx =2*( x2 - x1);
+		int dy = 2*abs(y2 - y1);
 
-		float error = dx / 2.0f;
+		int error = dx;
 		int ystep = (y1 < y2) ? 1 : -1;
 		int y = y1;
 

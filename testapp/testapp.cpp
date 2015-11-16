@@ -8,7 +8,7 @@
 /// uncomment the tests you wish to run
 
 //my includes
-#include <vld.h>
+//#include <vld.h>
 #include <algorithm>
 using namespace std;
 
@@ -32,7 +32,7 @@ using namespace std;
 
 #ifdef TEST2
 #define TEST_2A
-#define TEST_2B
+//#define TEST_2B
 //#define TEST_2C
 //#define TEST_2D
 #endif
@@ -1242,7 +1242,7 @@ int main(int argc, char **argv)
 	//for(int i=0; i<150; i++) //TODO
 	for (int i = 0; i < 1; i++)
 		DrawTestScene2A();
-	resultsInfo<<"    test2a.png : "<<timer.UserTime()<<endl;
+	resultsInfo << "    test2a.png : " << timer.UserTime() << endl;
 	WriteTGA("results/test2a.tga");
 
 	cout << "done in " << timer.UserTime() << " sec." << endl;
