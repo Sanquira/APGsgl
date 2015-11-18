@@ -13,25 +13,33 @@
 #include <algorithm>
 #include <cstring>
 #include <climits>
+#include <memory>
 
 #include "objects.h"
 #include "graphic_primitives.h"
 
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
 class Context {
 private:
-	Color *currColor;
-	Color *bcgColor;
+	Color currColor;
+	Color bcgColor;
 	float *colorBuffer;
 	float *depthBuffer;
 	int width, height;
 	std::vector<Vector4f> vertexBuffer;
-	vector<AbstractPrimitivum> scenePrimitives;
+	vector<std::unique_ptr<AbstractPrimitivum>> scenePrimitives;
+	vector<std::unique_ptr<AbstractLight>> lights;
 	std::stack<Matrix4f> modelViewStack, projectionStack;
 	std::stack<Matrix4f> *currMatrixStack;
 	int areaDrawMode, vertexDrawMode;
 	float pointSize;
 	bool depthTestEnable;
 	Matrix4f viewport;
+	Material material;
 
 	void symetricPoints(int x, int y, Vector4f * center){
 		int xs = (int)center->x;
@@ -59,6 +67,8 @@ public:
 		depthBuffer = (float*)calloc(width*height, sizeof(float));
 		fill_n(depthBuffer, width*height, std::numeric_limits<float>::infinity());
 		vertexBuffer.reserve(8);
+		scenePrimitives.clear();
+		lights.clear();
 
 		// matrix stacks
 		modelViewStack.push(Matrix4f());
@@ -66,8 +76,8 @@ public:
 		currMatrixStack = &modelViewStack;
 
 		// colors
-		bcgColor = new Color(0, 0, 0);
-		currColor = new Color(1, 1, 1);
+		bcgColor = Color(0, 0, 0);
+		currColor = Color(1, 1, 1);
 
 		// draw modes
 		areaDrawMode = 2; //SGL_FILL
@@ -78,6 +88,7 @@ public:
 		// buffers
 		vertexBuffer.clear();
 		scenePrimitives.clear();
+		lights.clear();
 		free(colorBuffer);
 		free(depthBuffer);
 
@@ -90,8 +101,8 @@ public:
 		}
 
 		// others
-		delete(bcgColor);
-		delete(currColor);
+//		delete(bcgColor);
+//		delete(currColor);
 	}
 
 	void setMatrixMode(int mode){
@@ -118,17 +129,17 @@ public:
 	}
 
 	void setDrawColor(float r, float g, float b){
-		delete(currColor);
-		currColor = new Color(r, g, b);
+//		delete(currColor);
+		currColor = Color(r, g, b);
 	}
 
-	Color* getBcgColor(){
+	Color getBcgColor(){
 		return bcgColor;
 	}
 
 	void setBcgColor(float r, float g, float b){
-		delete(bcgColor);
-		bcgColor = new Color(r, g, b);
+//		delete(bcgColor);
+		bcgColor = Color(r, g, b);
 	}
 
 	void clearVertexBuffer(){
@@ -210,13 +221,13 @@ public:
 	//RENDERING METHODS
 	//------------------------------------------------------------------
 
-	void setPixel(int x, int y, float z, Color * clr){
+	void setPixel(int x, int y, float z, Color clr){
 		if (x < 0 || y < 0 || x >= width || y >= height)
 			return;
 		if (depthBuffer[((y)*width + x)] >= z || !depthTestEnable){
-			colorBuffer[((y)*width + x) * 3 + 0] = clr->red;
-			colorBuffer[((y)*width + x) * 3 + 1] = clr->green;
-			colorBuffer[((y)*width + x) * 3 + 2] = clr->blue;
+			colorBuffer[((y)*width + x) * 3 + 0] = clr.red;
+			colorBuffer[((y)*width + x) * 3 + 1] = clr.green;
+			colorBuffer[((y)*width + x) * 3 + 2] = clr.blue;
 			depthBuffer[((y)*width + x)] = z;
 		}
 	}
@@ -499,10 +510,10 @@ public:
 
 	// TODO - dodelat Scan line seed fill pokud bude chut a potreba nejaky nastrel je v commitu 951b2f86 
 	void drawCircleFilled(Vector4f vec, float radii){
-		float tmpred = currColor->red;
-		currColor->red = -1;
+		float tmpred = currColor.red;
+		currColor.red = -1;
 		renderCircle(vec, radii);
-		currColor->red = tmpred;
+		currColor.red = tmpred;
 		Matrix4f mat = computeTransformation();
 		Vector4f center = mat.mulByVec(vec);
 		std::vector<Vector4f> seeds;
@@ -518,7 +529,7 @@ public:
 				setPixel(i, (int)seed.y, center.z, currColor);
 				//end
 				clr = getPixelColor(i + 1, (int)seed.y);
-				if (clr.compare(Color(-1, currColor->green, currColor->blue))){
+				if (clr.compare(Color(-1, currColor.green, currColor.blue))){
 					break;
 				}
 			}
@@ -528,18 +539,18 @@ public:
 				setPixel(i, (int)seed.y, center.z, currColor);
 				//end
 				clr = getPixelColor(i - 1, (int)seed.y);
-				if (clr.compare(Color(-1, currColor->green, currColor->blue))){
+				if (clr.compare(Color(-1, currColor.green, currColor.blue))){
 					break;
 				}
 			}
 
 			clr = getPixelColor((int)seed.x, (int)seed.y + 1);
-			if (!clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr.compare(*currColor)){
+			if (!clr.compare(Color(-1, currColor.green, currColor.blue)) && !clr.compare(currColor)){
 				seeds.push_back(Vector4f(seed.x, seed.y + 1, 0, 1));
 			}
 
 			clr = getPixelColor((int)seed.x, (int)seed.y - 1);
-			if (!clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr.compare(*currColor)){
+			if (!clr.compare(Color(-1, currColor.green, currColor.blue)) && !clr.compare(currColor)){
 				seeds.push_back(Vector4f(seed.x, seed.y - 1, 0, 1));
 			}
 
@@ -555,28 +566,43 @@ public:
 	void initializeScene(){
 		scenePrimitives.clear();
 	}
-//		
-//		AbstractPrimitivum *obj;
-//		Vector4f vec1 = Vector4f(0,1,1,1);
-//		Vector4f vec2 = Vector4f(0,-1,1,1);
-//		Vector4f vec3 = Vector4f(-1,0,1,1);
-//		
-//		obj = new TrianglePrivitivum(vec1,vec2,vec3);
-//		Matrix4f mat;
-//		mat.m[2][3]=200;
-//		mat.m[0][0]=0.5;
-//		obj->setTransformationMatrix(mat);
-//		
-//		Vector4f zero = Vector4f(-0.5,0,0,1);
-//		Vector4f vec = Vector4f(0,0,1,0);
-//		
-//		obj->intersect(zero,vec);
-//		delete(obj);
 	
 	void addSphere(Vector4f center, float radius){
-		//scenePrimitives.push_back(SpherePrimitivum(center,radius,))
+		scenePrimitives.push_back(make_unique<SpherePrimitivum>(center,radius,material));
+		Matrix4f tmp = computeTransformation();
+		scenePrimitives.back()->setTransformationMatrix(tmp);
+	}
+
+	void addTriangle(){
+		//TODO
+		cout << vertexBuffer.size() << endl;
 	}
 	
+	void setMaterial(Material &mat){
+		this->material = material;
+	}
+	
+	void renderRayTrace(){
+		Vector4f camera = Vector4f(0,0,-2,1);
+		
+//		int x = 400;
+//		int y = 300;
+		for (int y=0;y<height;y++){
+			for(int x=0;x<width;x++){
+				Vector4f pixel = Vector4f(x,y,-1,1);
+				pixel = computeTransformation().inverse().mulByVec(pixel);
+				for(auto & obj : scenePrimitives){
+					if(obj->intersect(camera,pixel)){
+						Color clr = obj->computePixelColor(camera,pixel); //TODO lights
+						setPixel(x,y,0,clr);
+					}
+				}
+			}
+		}
+		
+		
+		
+	}
 	
 	
 };

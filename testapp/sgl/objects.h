@@ -18,7 +18,9 @@ using namespace std;
 
 class Color {
 public:
-	float red, green, blue;
+	float red=0, green=0, blue=0;
+
+	Color(){	}
 
 	Color(float R, float G, float B){
 		red = R;
@@ -260,9 +262,36 @@ public:
 
 };
 
+class Material {
+public:
+
+	Color color = Color(1,1,1);
+	float kd = 0;
+	float ks = 0;
+	float shine = 0;
+	float T = 0;
+	float ior = 0;
+
+	Material(){
+	}
+
+	Material(float r, float g, float b, float kd, float ks, float shine, float T, float ior){
+		this->color = Color(r,g,b);
+		this->kd = kd;
+		this->ks = ks;
+		this->shine = shine;
+		this->T = T;
+		this->ior = ior;
+	}
+};
+
 bool compareVector4fX(Vector4f i, Vector4f j) {
 	return (i.x < j.x);
 }
+
+class AbstractLight {
+
+};
 
 #endif
 

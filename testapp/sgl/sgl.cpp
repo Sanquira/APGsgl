@@ -227,10 +227,14 @@ void sglEnd(void) {
 		con->drawLoop();
 	}
 	if (con->getVertexDrawMode() == SGL_POLYGON){
-		if (con->getAreaDrawMode() == SGL_FILL){
-			con->drawFilledLoop();
+		if(transactionSceneEnabled){
+			con->addTriangle();
+		}else{
+			if (con->getAreaDrawMode() == SGL_FILL){
+				con->drawFilledLoop();
+			}
+			con->drawLoop();
 		}
-		con->drawLoop();
 	}
 	con->clearVertexBuffer();
 }
@@ -584,60 +588,18 @@ void sglEndScene() {
 		setErrCode(SGL_INVALID_OPERATION);
 		return;
 	}
-	transactionFragmentEnabled = false;
+	transactionSceneEnabled = false;
 }
 
-/// Sphere definition.
-/**
-  Adds a sphere primitive to the primitive list.
-
-  @param x [in] sphere center x coordinate
-  @param y [in] sphere center y coordinate
-  @param z [in] sphere center z coordinate
-  @param radius [in] sphere radius
-
-  ERRORS:
-   - SGL_INVALID_OPERATION
-    No context has been allocated yet or sglSphere() is called within a
-    sglBegin() / sglEnd() sequence or sglSphere() is called outside
-    sglBeginScene() / sglEndScene() sequence.
- */
-void sglSphere(const float x,
-	const float y,
-	const float z,
-	const float radius) {
+void sglSphere(const float x, const float y, const float z, const float radius) {
 	if (!transactionSceneEnabled || transactionFragmentEnabled || contextBuffer[currContext] == NULL){
 		setErrCode(SGL_INVALID_OPERATION);
 		return;
 	}
 	
-	}
+	contextBuffer[currContext]->addSphere(Vector4f(x,y,z,1), radius);
+}
 
-
-/// Surface material specification.
-/**
-  Sets the material properties for subsequent graphics primitives specification.
-
-  SGL employs the popular Phong model. Usually, 0 <= Kd <= 1 and 0 <= Ks <= 1,
-  though it is not required that Kd + Ks == 1.
-  Transmitting objects (T > 0) are considered to have two sides for algorithms
-  that need these (normally objects are treated as having only one side).
-
-  @param r [in] the red color component
-  @param g [in] the green color component
-  @param b [in] the blue color component
-  @param kd [in] the diffuse coefficient
-  @param ks [in] the specular coefficient
-  @param shine [in] Phong cosine power for highlights
-  @param T [in] the transmittance coefficient (fraction of contribution of the
-                transmitting/refracted ray)
-  @param ior [in] index of refraction
-
-  ERRORS:
-   - SGL_INVALID_OPERATION
-    No context has been allocated yet or sglMaterial() is called within a
-    sglBegin() / sglEnd() sequence.
- */
 void sglMaterial(const float r,
 	const float g,
 	const float b,
@@ -645,7 +607,14 @@ void sglMaterial(const float r,
 	const float ks,
 	const float shine,
 	const float T,
-	const float ior) {}
+	const float ior) {
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
+	}
+	Material mat = Material(r,g,b,kd,ks,shine,T,ior);
+	contextBuffer[currContext]->setMaterial(mat);
+}
 
 
 /// Point light specification.
@@ -682,7 +651,14 @@ void sglPointLight(const float x,
     sglBegin() / sglEnd() sequence or sglRayTraceScene() is called within a
     sglBeginScene() / sglEndScene() sequence.
 */
-void sglRayTraceScene() {}
+void sglRayTraceScene() {
+	if (transactionSceneEnabled || transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
+	}
+	contextBuffer[currContext]->renderRayTrace();
+
+}
 
 //NOT USED
 void sglRasterizeScene() {}

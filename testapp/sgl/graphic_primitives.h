@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstring>
 #include <climits>
+#include <memory>
 
 using namespace std;
 
@@ -21,13 +22,23 @@ class AbstractPrimitivum {
 protected:
 	
 	Matrix4f invTran;
-	
+	Material material;
 	
 	virtual void upgradeTransformationMatrix() = 0;
 
 public:
 
-	void setTransformationMatrix(Matrix4f mat){
+	AbstractPrimitivum(){}
+
+	Material getMaterial(){
+		return material;
+	}
+
+	void setMaterial(Material mat){
+		material = mat;
+	}
+
+	void setTransformationMatrix(Matrix4f &mat){
 		Matrix4f tmp = mat.inverse();
 		invTran = invTran.mulByMatrix(tmp);
 	}
@@ -42,8 +53,12 @@ public:
 	
 	virtual ~AbstractPrimitivum(){}
 
-	virtual void intersect(Vector4f &origin, Vector4f &ray) = 0;
+	virtual bool intersect(Vector4f &origin, Vector4f &ray) = 0;
 	
+//	Color computePixelColor(Vector4f origin, Vector4f ray, vector<std::unique_ptr<AbstractLight>> lights){
+	Color computePixelColor(Vector4f origin, Vector4f ray){
+		return material.color;
+	}
 
 };
 
@@ -63,13 +78,14 @@ private:
 	
 public:
 	
-	SpherePrimitivum(Vector4f center, float radius){
+	SpherePrimitivum(Vector4f center, float radius, Material material){
 		this->center = center;
 		this->radius = radius;
 		upgradeTransformationMatrix();
+		setMaterial(material);
 	}
 	
-	virtual void intersect(Vector4f &origin, Vector4f &ray){
+	virtual bool intersect(Vector4f &origin, Vector4f &ray){
 		Vector4f to = transformVector(origin);
 		ray.removeHomo();
 		Vector4f tr = transformVector(ray);
@@ -80,85 +96,89 @@ public:
 
 		float D = (b * b) - (4 * a * c);
 		if (D < 0) {
-			cout << "No intersection" << endl;
+//			cout << "No intersection" << endl;
+			return false;
 		}
 		float d1 = (-b + sqrt(D)) / (2 * a);
 		float d2 = (-b - sqrt(D)) / (2 * a);
 
 		float ret = min(d1, d2);
 		if(ret>=0){			
-			cout << "intersect in " << ret << endl;
+//			cout << "intersect in " << ret << endl;
+			return true;
 		}else{
-			cout << "No positive intersection " << d1 << ", " << d2 <<endl;
+//			cout << "No positive intersection " << d1 << ", " << d2 <<endl;
 		}
+		return false;
 	}
 
 };
 
-class TrianglePrivitivum : public AbstractPrimitivum {
-private:
-	Vector4f points[3];
+//class TrianglePrivitivum : public AbstractPrimitivum {
+//private:
+//	Vector4f points[3];
 
-	void upgradeTransformationMatrix(){}
-	
-	bool barycentricInside(Vector4f &point){
-		Vector4f u = points[1].minus(points[0]);
-		Vector4f v = points[2].minus(points[0]);
-		Vector4f w = point.minus(points[0]);
-		
-		Vector4f vw = v.cross(w);
-		Vector4f vu = v.cross(u);
-		
-		if(vw.dotNoHomo(vu)<0){
-			return false;
-		}
-		
-		Vector4f uw = u.cross(w);
-		vu = vu.mulByConst(-1);
-		
-		if(uw.dotNoHomo(vu)<0){
-			return false;
-		}
-		
-		float denom = sqrt(vu.dotNoHomo(vu));
-		float r = sqrt(vw.dotNoHomo(vw))/denom;
-		float t = sqrt(uw.dotNoHomo(uw))/denom;
-		
-		return (r+t <= 1);
-		
-	}
+//	void upgradeTransformationMatrix(){}
+//	
+//	bool barycentricInside(Vector4f &point){
+//		Vector4f u = points[1].minus(points[0]);
+//		Vector4f v = points[2].minus(points[0]);
+//		Vector4f w = point.minus(points[0]);
+//		
+//		Vector4f vw = v.cross(w);
+//		Vector4f vu = v.cross(u);
+//		
+//		if(vw.dotNoHomo(vu)<0){
+//			return false;
+//		}
+//		
+//		Vector4f uw = u.cross(w);
+//		vu = vu.mulByConst(-1);
+//		
+//		if(uw.dotNoHomo(vu)<0){
+//			return false;
+//		}
+//		
+//		float denom = sqrt(vu.dotNoHomo(vu));
+//		float r = sqrt(vw.dotNoHomo(vw))/denom;
+//		float t = sqrt(uw.dotNoHomo(uw))/denom;
+//		
+//		return (r+t <= 1);
+//		
+//	}
 
-public:
+//public:
 
-	TrianglePrivitivum(Vector4f v1, Vector4f v2, Vector4f v3){
-		points[0] = v1;
-		points[1] = v2;
-		points[2] = v3;
-	}
+//	TrianglePrivitivum(Vector4f v1, Vector4f v2, Vector4f v3, Material material){
+//		setMaterial(material);
+//		points[0] = v1;
+//		points[1] = v2;
+//		points[2] = v3;
+//	}
 
-	virtual void intersect(Vector4f &origin, Vector4f &ray){
-		Vector4f to = transformVector(origin);
-		ray.removeHomo();
-		Vector4f tr = transformVector(ray);
-		
-		Vector4f tmp = points[0].minus(points[1]);
-		Vector4f normalPlane = points[2].minus(points[1]).cross(tmp);
-		
-		tmp = points[0].minus(to);
-		float t = normalPlane.dotNoHomo(tmp)/normalPlane.dotNoHomo(tr);
-		
-		tmp = tr.mulByConst(-t);
-		tmp = to.minus(tmp);
-		
-		if(barycentricInside(tmp)){
-			cout << "inside" << endl;
-		}else{
-			cout << "not inside" << endl;
-		}
-		
-	}
+//	virtual void intersect(Vector4f &origin, Vector4f &ray){
+//		Vector4f to = transformVector(origin);
+//		ray.removeHomo();
+//		Vector4f tr = transformVector(ray);
+//		
+//		Vector4f tmp = points[0].minus(points[1]);
+//		Vector4f normalPlane = points[2].minus(points[1]).cross(tmp);
+//		
+//		tmp = points[0].minus(to);
+//		float t = normalPlane.dotNoHomo(tmp)/normalPlane.dotNoHomo(tr);
+//		
+//		tmp = tr.mulByConst(-t);
+//		tmp = to.minus(tmp);
+//		
+//		if(barycentricInside(tmp)){
+//			cout << "inside" << endl;
+//		}else{
+//			cout << "not inside" << endl;
+//		}
+//		
+//	}
 
-};
+//};
 
 #endif
 
