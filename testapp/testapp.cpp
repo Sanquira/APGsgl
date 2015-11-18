@@ -10,12 +10,13 @@
 //my includes
 //#include <vld.h>
 #include <algorithm>
+
 using namespace std;
 
 //#define TEST0
 //#define TEST1
-#define TEST2
-//#define TEST3
+//#define TEST2
+#define TEST3
 //#define TEST4
 //#define TEST5
 
@@ -32,15 +33,15 @@ using namespace std;
 
 #ifdef TEST2
 #define TEST_2A
-//#define TEST_2B
-//#define TEST_2C
-//#define TEST_2D
+#define TEST_2B
+#define TEST_2C
+#define TEST_2D
 #endif
 
 #ifdef TEST3
 #define TEST_3A
-#define TEST_3B
-#define TEST_3C
+//#define TEST_3B
+//#define TEST_3C
 #endif
 
 #ifdef TEST4
@@ -159,7 +160,7 @@ void WriteTGA(
 
 	outFile.write(reinterpret_cast<char*>(&header), 18);
 
-	for (uint i = 0; i < (3 * resX*resY);) {
+	for (int i = 0; i < (3 * resX*resY);) {
 		uint8 r, g, b;
 		r = static_cast<uint8>(
 			std::max(0.f, std::min(1.f, data[i++])) * 255.f);
@@ -1152,176 +1153,11 @@ int main(int argc, char **argv)
 
 	// run and benchmark the tests
 	Timer timer;
-	float time;
 
 	double totalTime = 0;
 
 	ofstream resultsInfo("results/desc.neon");
 	resultsInfo << "res:" << endl;
-
-
-#ifdef TEST_0A
-	cout << "test 0a..." << flush;
-	timer.Restart();
-	sglSetContext(_contexts[0]);
-	sglClearColor(0, 0, 0, 1);
-	sglClear(SGL_COLOR_BUFFER_BIT);
-	DrawTestScene0A();
-	cout << "done in " << timer.UserTime() << " sec." << endl;
-	totalTime += timer.UserTime();
-#endif
-
-#ifdef TEST_0B
-	cout << "test 0a..." << flush;
-	timer.Restart();
-	sglSetContext(_contexts[1]);
-	sglClearColor(0, 0, 0, 1);
-	sglClear(SGL_COLOR_BUFFER_BIT);
-	DrawTestScene0B();
-	cout << "done in " << timer.UserTime() << " sec." << endl;
-	totalTime += timer.UserTime();
-#endif
-
-#ifdef TEST_1A
-	cout << "test 1a..." << flush;
-	timer.Restart();
-
-	sglSetContext(_contexts[0]);
-	sglClearColor(0, 0, 0, 1);
-	sglClear(SGL_COLOR_BUFFER_BIT);
-	for (int i = 0; i < 1; i++){
-		DrawTestScene1A();
-	}
-	WriteTGA("results/test1a.tga");
-	resultsInfo << "    test1a.png : " << timer.UserTime() << endl;
-	cout << "done in " << timer.UserTime() << " sec." << endl;
-	totalTime += timer.UserTime();
-#endif
-
-#ifdef TEST_1B
-	cout << "test 1b..." << flush;
-	timer.Restart();
-
-	sglSetContext(_contexts[1]);
-	sglClearColor(0, 0, 0, 1);
-	sglClear(SGL_COLOR_BUFFER_BIT);
-	for (int i = 0; i<1; i++)
-		DrawTestScene1B();
-	WriteTGA("results/test1b.tga");
-	resultsInfo << "    test1b.png : " << timer.UserTime() << endl;
-	cout << "done in " << timer.UserTime() << " sec." << endl;
-	totalTime += timer.UserTime();
-#endif
-
-#ifdef TEST_1C
-	cout << "test 1c..." << flush;
-	timer.Restart();
-
-	sglSetContext(_contexts[2]);
-	sglClearColor(0, 0, 0, 1);
-	sglClear(SGL_COLOR_BUFFER_BIT);
-	for (int i = 0; i < 1000; i++)
-		DrawTestScene1C();
-	WriteTGA("results/test1c.tga");
-	resultsInfo << "    test1c.png : " << timer.UserTime() << endl;
-
-	cout << "done in " << timer.UserTime() << " sec." << endl;
-	totalTime += timer.UserTime();
-#endif
-
-	//  cout << "Total time for test 1: " << test1time << " sec. " << std::endl;
-	//  resultsInfo<<"TotalTime : "<<timer.UserTime()<<endl;
-
-#ifdef TEST_2A
-	cout << "test 2a..." << flush;
-	timer.Restart();
-
-	sglSetContext(_contexts[3]);
-	sglClearColor(0, 0, 0, 1);
-	sglClear(SGL_COLOR_BUFFER_BIT);
-	//for(int i=0; i<150; i++) //TODO
-	for (int i = 0; i < 1; i++)
-		DrawTestScene2A();
-	resultsInfo << "    test2a.png : " << timer.UserTime() << endl;
-	WriteTGA("results/test2a.tga");
-
-	cout << "done in " << timer.UserTime() << " sec." << endl;
-	totalTime += timer.UserTime();
-#endif
-
-#ifdef TEST_2B
-	cout << "test 2b..." << flush;
-	timer.Restart();
-
-	sglSetContext(_contexts[4]);
-	sglClearColor(0, 0, 0, 1);
-	sglClear(SGL_COLOR_BUFFER_BIT);
-	//for (int i = 0; i<15; i++)
-	for (int i = 0; i < 1; i++)
-		DrawTestScene2B();
-	resultsInfo << "    test2b.png : " << timer.UserTime() << endl;
-	WriteTGA("results/test2b.tga");
-
-	cout << "done in " << timer.UserTime() << " sec." << endl;
-	totalTime += timer.UserTime();
-#endif
-
-#ifdef TEST_2C
-	cout << "test 2c..." << flush;
-	timer.Restart();
-
-	sglSetContext(_contexts[5]);
-	sglClearColor(0, 0, 0, 1);
-	sglClear(SGL_COLOR_BUFFER_BIT | SGL_DEPTH_BUFFER_BIT);
-	//for (int i = 0; i<15; i++)
-	for (int i = 0; i < 1; i++)
-		DrawTestScene2C();
-	resultsInfo<<"    test2c.png : "<<timer.UserTime()<<endl;
-	WriteTGA("results/test2c.tga");
-
-	cout << "done in " << timer.UserTime() << " sec." << endl;
-	totalTime += timer.UserTime();
-#endif
-
-#ifdef TEST_2D
-	{
-		NFFStore nffstore;
-
-		/// read in the NFF file
-		const char *scenename = "cornell-spheres.nff";
-
-		FILE *f = fopen(scenename,"rt");
-		if(!f) {
-			cerr << "Could not open " << scenename << " for reading." << std::endl;
-			return 2;
-		}
-
-		char errstring[4000];
-		if( ReadNFF(f,errstring,&nffstore) < 0 ) {
-			cerr << "Error in NFF file " << scenename << ":\n" << errstring << std::endl;
-			return 2;
-		}
-
-		cerr << "NFF file " << scenename << " successfully parsed." << endl;
-
-		cout << "test 2d..." << flush;
-		timer.Restart();
-
-		sglSetContext(_contexts[0]);
-		sglClearColor(0, 0, 0, 1);
-		sglClear(SGL_COLOR_BUFFER_BIT | SGL_DEPTH_BUFFER_BIT);
-		for (int i = 0; i < 1; i++)
-			DrawTestScene2D(nffstore);
-
-		resultsInfo << "    test2d.png : " << timer.UserTime() << endl;
-		WriteTGA("results/test2d.tga");
-
-
-		totalTime += timer.UserTime();
-	}
-
-	cout << "Total time for test 2: " << totalTime << " sec. " << std::endl;
-#endif
 
 
 	// general ray tracer code invoken when a parameter is used to execute

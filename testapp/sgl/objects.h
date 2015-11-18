@@ -1,3 +1,7 @@
+#ifndef OBJECTS_H_
+
+#define OBJECTS_H_
+
 #define _USE_MATH_DEFINES
 
 #include <cstdlib>
@@ -11,10 +15,6 @@
 #include <climits>
 
 using namespace std;
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846264338327950288419716939937510 
-#endif
 
 class Color {
 public:
@@ -37,13 +37,12 @@ public:
 
 class Vector4f{
 public:
-	float x;
-	float y;
-	float z;
-	float w;
+	float x = 0;
+	float y = 0;
+	float z = 0;
+	float w = 1;
 
 	Vector4f(){
-		Vector4f(0, 0, 0, 1);
 	}
 
 	Vector4f(float x, float y, float z, float w){
@@ -61,6 +60,30 @@ public:
 		ret.w = w;
 		return ret;
 	}
+	
+	float dotNoHomo(Vector4f &vector){
+		float ret=0;
+		ret += x*vector.x;
+		ret += y*vector.y;
+		ret += z*vector.z;
+		return ret;
+	}
+	
+	Vector4f cross(Vector4f &vector){
+		Vector4f ret;
+		ret.x = y*vector.z-z*vector.y;
+		ret.y = z*vector.x-x*vector.z;
+		ret.z = x*vector.y-y*vector.x;
+		return ret;
+	}
+	
+	Vector4f mulByConst(float num){
+		Vector4f ret;
+		ret.x = x * num;
+		ret.y = y * num;
+		ret.z = z * num;
+		return ret;
+	}
 
 	void homoNorm(){
 		x = x / w;
@@ -68,9 +91,13 @@ public:
 		z = z / w;
 		w = w / w;
 	}
+	
+	void removeHomo(){
+		w = 0;
+	}
 
 	void toTerminal(){
-		std::cout << x << ", " << y << ", " << z << ", " << w << std::endl;
+		cout << x << ", " << y << ", " << z << ", " << w << endl;
 	}
 };
 
@@ -141,6 +168,85 @@ public:
 		return ret;
 	}
 
+	Matrix4f inverse(){
+		float x[4][4];
+		memcpy(x,m,sizeof(m));
+		int indxc[4],indxr[4],ipiv[4];
+		int i,icol,irow,j,k,l,ll,n;
+		float big,dum,pivinv,temp;
+		// satisfy the compiler
+		icol = irow = 0;
+		
+		// the size of the matrix
+		n = 4;
+		
+		for ( j = 0 ; j < n ; j++){ /* zero pivots */
+			ipiv[j] = 0;
+		}
+		
+		for ( i = 0; i < n; i++){
+			big = 0.0;
+			for (j = 0 ; j < n ; j++){
+				if (ipiv[j] != 1){
+					for ( k = 0 ; k<n ; k++){
+						if (ipiv[k] == 0){
+							if (fabs(x[k][j]) >= big){
+								big = fabs(x[k][j]);
+								irow = j;
+								icol = k;
+							}
+						}else if (ipiv[k] > 1){
+							cerr << "ERROR MATRIX IS SINGULAR!!!" << endl;
+//							return 1; /* singular matrix */
+						}
+					}
+				}
+			}
+			++(ipiv[icol]);
+			if (irow != icol){
+				for ( l = 0 ; l<n ; l++){
+					temp = x[l][icol];
+					x[l][icol] = x[l][irow];
+					x[l][irow] = temp;
+				}
+			}
+			indxr[i] = irow;
+			indxc[i] = icol;
+			if (x[icol][icol] == 0.0){
+				cerr << "ERROR MATRIX IS SINGULAR!!!" << endl;
+//				return 1; /* singular matrix */
+			}
+				
+			pivinv = 1.0 / x[icol][icol];
+			x[icol][icol] = 1.0 ;
+			for ( l = 0 ; l<n ; l++){
+				x[l][icol] = x[l][icol] * pivinv ;
+			}
+				
+			for (ll = 0 ; ll < n ; ll++){
+				if (ll != icol){
+					dum = x[icol][ll];
+					x[icol][ll] = 0.0;
+					for ( l = 0 ; l<n ; l++){
+						x[l][ll] = x[l][ll] - x[l][icol] * dum ;
+					}
+				}
+			}
+		}
+		for ( l = n; l--; ){
+			if (indxr[l] != indxc[l]){
+				for ( k = 0; k<n ; k++){
+					temp = x[indxr[l]][k];
+					x[indxr[l]][k] = x[indxc[l]][k];
+					x[indxc[l]][k] = temp;
+				}
+			}
+	  	}
+	Matrix4f ret;
+	memcpy(ret.m,x,sizeof(x));
+	return ret;
+	}
+
 	void toTerminal(){
 		for (int i = 0; i < 4; i++)
 		{
@@ -158,528 +264,5 @@ bool compareVector4fX(Vector4f i, Vector4f j) {
 	return (i.x < j.x);
 }
 
-class Context {
-private:
-	Color *currColor;
-	Color *bcgColor;
-	float *colorBuffer;
-	float *depthBuffer;
-	int width, height;
-	std::vector<Vector4f> vertexBuffer;
-	std::stack<Matrix4f> modelViewStack, projectionStack;
-	std::stack<Matrix4f> *currMatrixStack;
-	int areaDrawMode, vertexDrawMode;
-	float pointSize;
-	bool depthTestEnable;
-	Matrix4f viewport;
-
-	void symetricPoints(int x, int y, Vector4f * center){
-		int xs = (int)center->x;
-		int ys = (int)center->y;
-		float z = center->z;
-		setPixel(y + xs, x + ys, z, currColor);
-		setPixel(x + xs, y + ys, z, currColor);
-		setPixel(-x + xs, y + ys, z, currColor);
-		setPixel(-y + xs, x + ys, z, currColor);
-		setPixel(-y + xs, -x + ys, z, currColor);
-		setPixel(-x + xs, -y + ys, z, currColor);
-		setPixel(x + xs, -y + ys, z, currColor);
-		setPixel(y + xs, -x + ys, z, currColor);
-	}
-
-public:
-	// constructor
-	Context(int width, int height){
-		this->width = width;
-		this->height = height;
-		pointSize = 1.0f;
-
-		// buffers
-		colorBuffer = (float*)calloc(width*height * 3, sizeof(float));
-		depthBuffer = (float*)calloc(width*height, sizeof(float));
-		fill_n(depthBuffer, width*height, std::numeric_limits<float>::infinity());
-		vertexBuffer.reserve(8);
-
-		// matrix stacks
-		modelViewStack.push(Matrix4f());
-		projectionStack.push(Matrix4f());
-		currMatrixStack = &modelViewStack;
-
-		// colors
-		bcgColor = new Color(0, 0, 0);
-		currColor = new Color(1, 1, 1);
-
-		// draw modes
-		areaDrawMode = 2; //SGL_FILL
-	}
-
-	// destructor
-	~Context(){
-		// buffers
-		vertexBuffer.clear();
-		free(colorBuffer);
-		free(depthBuffer);
-
-		// matrix stacks
-		while (!modelViewStack.empty()){
-			modelViewStack.pop();
-		}
-		while (!projectionStack.empty()){
-			projectionStack.pop();
-		}
-
-		// others
-		delete(bcgColor);
-		delete(currColor);
-	}
-
-	void setMatrixMode(int mode){
-		if (mode == 0){
-			currMatrixStack = &modelViewStack;
-		}
-		if (mode == 1){
-			currMatrixStack = &projectionStack;
-		}
-	}
-
-	void pushMatrix(){
-		Matrix4f mat;
-		mat.mulByMatrixToItself(&currMatrixStack->top());
-		currMatrixStack->push(mat);
-	}
-
-	void popMatrix(){
-		currMatrixStack->pop();
-	}
-
-	std::stack<Matrix4f>* getMatrixStack(){
-		return currMatrixStack;
-	}
-
-	void setDrawColor(float r, float g, float b){
-		delete(currColor);
-		currColor = new Color(r, g, b);
-	}
-
-	Color* getBcgColor(){
-		return bcgColor;
-	}
-
-	void setBcgColor(float r, float g, float b){
-		delete(bcgColor);
-		bcgColor = new Color(r, g, b);
-	}
-
-	void clearVertexBuffer(){
-		vertexBuffer.clear();
-	}
-
-	std::vector<Vector4f> getVertexBuffer(){
-		return vertexBuffer;
-	}
-
-	void addToVertexBuffer(Vector4f vec){
-		vertexBuffer.push_back(vec);
-	}
-
-	float* getColorBuffer(){
-		return colorBuffer;
-	}
-
-	int getWidth(){
-		return width;
-	}
-
-	int getHeight(){
-		return height;
-	}
-
-	void setAreaDrawMode(int mode){
-		areaDrawMode = mode;
-	}
-
-	int getAreaDrawMode(){
-		return areaDrawMode;
-	}
-
-	void setVertexDrawMode(int mode){
-		vertexDrawMode = mode;
-	}
-
-	int getVertexDrawMode(){
-		return vertexDrawMode;
-	}
-
-	void setPointSize(float size){
-		pointSize = size;
-	}
-
-	float getPointSize(){
-		return pointSize;
-	}
-
-	void setDepthTest(bool ena){
-		depthTestEnable = ena;
-	}
-
-	bool getDepthTest(){
-		return depthTestEnable;
-	}
-
-	Matrix4f getViewport(){
-		return viewport;
-	}
-
-	void setViewport(Matrix4f mat){
-		memcpy(&viewport, &mat, sizeof(Matrix4f));
-	}
-
-	void cleanDepthBuffer(){
-		free(depthBuffer);
-		depthBuffer = (float*)calloc(width*height, sizeof(float));
-		fill_n(depthBuffer, width*height, std::numeric_limits<float>::infinity());
-	}
-
-	Matrix4f computeTransformation(){
-		Matrix4f tmp = projectionStack.top().mulByMatrix(modelViewStack.top());
-		return viewport.mulByMatrix(tmp);
-	}
-
-	//------------------------------------------------------------------
-	//RENDERING METHODS
-	//------------------------------------------------------------------
-
-	void setPixel(int x, int y, float z, Color * clr){
-		if (x < 0 || y < 0 || x >= width || y >= height)
-			return;
-		if (depthBuffer[((y)*width + x)] >= z || !depthTestEnable){
-			colorBuffer[((y)*width + x) * 3 + 0] = clr->red;
-			colorBuffer[((y)*width + x) * 3 + 1] = clr->green;
-			colorBuffer[((y)*width + x) * 3 + 2] = clr->blue;
-			depthBuffer[((y)*width + x)] = z;
-		}
-	}
-
-	Color getPixelColor(int x, int y){
-		return  Color(colorBuffer[((y)*width + x) * 3 + 0], colorBuffer[((y)*width + x) * 3 + 1], colorBuffer[((y)*width + x) * 3 + 2]);
-	}
-
-	void renderCircle(Vector4f vec, float radii){
-		Matrix4f mat = computeTransformation();
-		//	mat->toTerminal();
-		//	cout << "*******************" << endl;
-		float scale = std::sqrt(mat.m[0][0] * mat.m[1][1] - mat.m[1][0] * mat.m[0][1]);
-		Vector4f center = mat.mulByVec(vec);
-		int x, y, p;
-		x = 0;
-		y = (int)(radii*scale);
-		p = (int)(1 - radii*scale); // p pro [0,r]
-		while (x < y) {
-			symetricPoints(x, y, &center);
-			if (p < 0) {
-				p += 2 * x + 1;
-			}
-			else {
-				p += 2 * (x - y) + 1;
-				y -= 1;
-			}
-			x += 1;
-		}
-		if (x == y) {// 45° pixely, jen 4
-			symetricPoints(x, y, &center);
-		}
-	}
-
-	void renderEllipse(Vector4f center, float a, float b){
-		Matrix4f mat = computeTransformation();
-
-		for (int i = 0; i < 40; i++)
-		{
-			float uhel = (float)(M_PI*i / 20.);
-			float uhelDalsi = (float)(M_PI*(i + 1) / 20.);
-			Vector4f p1, p2;
-			p1.x = center.x + a*cos(uhel);
-			p1.y = center.y + b*sin(uhel);
-			p1.z = center.z;
-			p1.w = 1;
-			p2.x = center.x + a*cos(uhelDalsi);
-			p2.y = center.y + b*sin(uhelDalsi);
-			p2.z = center.z;
-			p2.w = 1;
-			renderLine(mat.mulByVec(p1), mat.mulByVec(p2));
-		}
-	}
-
-	void renderArc(Vector4f center, float radius, float from, float to){
-		Matrix4f mat = computeTransformation();
-
-		int numOfVert = (int)ceil(40 * fabs(to - from) / (2 * M_PI)) + 1;
-		float step = (to - from) / (numOfVert - 1);
-
-		for (int i = 0; i < numOfVert - 1; i++){
-			Vector4f p1, p2;
-			p1.x = center.x + cos(from + i*step)*radius;
-			p1.y = center.y + sin(from + i*step)*radius;
-			p1.z = center.z;
-			p1.w = 1;
-			p2.x = center.x + cos(from + (i + 1)*step)*radius;
-			p2.y = center.y + sin(from + (i + 1)*step)*radius;
-			p2.z = center.z;
-			p2.w = 1;
-			renderLine(mat.mulByVec(p1), mat.mulByVec(p2));
-		}
-	}
-
-	void renderLine(Vector4f p1, Vector4f p2){
-		int x1 = (int)round(p1.x);
-		int y1 = (int)round(p1.y);
-		int x2 = (int)round(p2.x);
-		int y2 = (int)round(p2.y);
-		float z1 = p1.z;
-		float z2 = p2.z;
-
-		float depth;
-
-		bool uhel = (abs(y2 - y1) > abs(x2 - x1)); //>45°
-		if (uhel){
-			std::swap(x1, y1);
-			std::swap(x2, y2);
-		}
-
-		if (x1 > x2){ //leva polorovina
-			std::swap(x1, x2);
-			std::swap(y1, y2);
-		}
-
-		int dx =2*( x2 - x1);
-		int dy = 2*abs(y2 - y1);
-
-		int error = dx;
-		int ystep = (y1 < y2) ? 1 : -1;
-		int y = y1;
-
-		int maxX = x2;
-
-		float zdd = (z2 - z1) / (maxX - x1);
-		depth = z1;
-
-		for (int x = x1; x <= maxX; x++){
-			if (uhel){
-				setPixel(y, x, depth, currColor);
-			}
-			else{
-				setPixel(x, y, depth, currColor);
-			}
-			depth += zdd;
-			error -= dy;
-			if (error < 0){
-				y += ystep;
-				error += dx;
-			}
-		}
-	}
-
-	void renderPoint(Vector4f &vec){
-		int tmp = (int)(pointSize / 2);
-		for (int i = -tmp; i <= tmp; i++){
-			for (int j = -tmp; j <= tmp; j++){
-				setPixel((int)(vec.x + i), (int)(vec.y + j), vec.z, currColor);
-			}
-		}
-	}
-
-	//------------------------------------------------------------------
-	//VERTEX BUFFER DRAW POINTS
-	//------------------------------------------------------------------
-
-	void drawPoints(){
-		Matrix4f mat = computeTransformation();
-		for (size_t i = 0; i < vertexBuffer.size(); i++)
-		{
-			Vector4f  vec = mat.mulByVec(vertexBuffer[i]);
-			renderPoint(vec);
-		}
-	}
-
-	void drawLines(){
-		Matrix4f mat = computeTransformation();
-		for (size_t i = 0; i < vertexBuffer.size(); i += 2)
-		{
-			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
-			Vector4f vec2 = mat.mulByVec(vertexBuffer[i + 1]);
-			renderLine(vec1, vec2);
-		}
-	}
-
-	void drawStrip(){
-		Matrix4f mat = computeTransformation();
-		for (size_t i = 0; i < vertexBuffer.size() - 1; i++)
-		{
-			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
-			Vector4f vec2 = mat.mulByVec(vertexBuffer[i + 1]);
-			renderLine(vec1, vec2);
-		}
-	}
-
-	void drawLoop(){
-		Matrix4f mat = computeTransformation();
-		for (size_t i = 0; i < vertexBuffer.size() - 1; i++)
-		{
-			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
-			Vector4f vec2 = mat.mulByVec(vertexBuffer[i + 1]);
-			renderLine(vec1, vec2);
-		}
-		Vector4f vec1 = mat.mulByVec(vertexBuffer.back());
-		Vector4f vec2 = mat.mulByVec(vertexBuffer.front());
-		renderLine(vec1, vec2);
-	}
-
-	//------------------------------------------------------------------
-	//FILLED OBJECTS
-	//------------------------------------------------------------------
-
-	//TODO - osetrit vodorovnou usecku
-	void drawFilledLoop(){
-		std::vector<Vector4f> prus;
-		Matrix4f mat = computeTransformation();
-		int y0;
-		int maxY = INT_MIN;
-		int minY = INT_MAX;
-
-		float depth;
-
-		for (size_t i = 0; i < vertexBuffer.size(); i++)
-		{
-			Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
-			vec1.homoNorm();
-			y0 = (int)ceil(vec1.y);
-			if (maxY < y0)
-				maxY = y0;
-			if (minY > y0)
-				minY = y0;
-		}
-
-		for (int y = maxY; y >= minY; y--)
-		{
-			prus.clear();
-			for (size_t i = 0; i < vertexBuffer.size(); i++)
-			{
-				Vector4f vec1 = mat.mulByVec(vertexBuffer[i]);
-				Vector4f vec2 = mat.mulByVec(vertexBuffer[(i == vertexBuffer.size() - 1) ? 0 : i + 1]);
-				vec1.homoNorm();
-				vec2.homoNorm();
-				if (vec1.y > vec2.y) {
-					Vector4f tmp = vec1;
-					vec1 = vec2;
-					vec2 = tmp;
-				}
-				Vector4f vec = vec2.minus(vec1);
-				float t = (y - vec1.y) / vec.y;
-				if (t >= 0 && t < 1){
-					float x = vec1.x + vec.x * t;
-					float z = vec1.z + vec.z * t;
-					prus.push_back(Vector4f(ceil(x), (float)y, z, 1));
-				}
-			}
-			std::sort(prus.begin(), prus.end(), compareVector4fX);
-
-			if (prus.size() != 0){
-				
-				for (size_t i = 0; i < prus.size() - 1; i += 2)
-				{
-					float zdd = (prus[i + 1].z - prus[i].z) / (prus[i + 1].x - prus[i].x);
-					depth = prus[i].z;
-					for (int x = (int)prus[i].x; x < (int)prus[i + 1].x; x++)
-					{
-						setPixel(x, y, depth, currColor);
-						depth += zdd;
-					}
-				}
-			}
-		}
-		prus.clear();
-	}
-
-	void drawArcFilled(Vector4f center, float radius, float from, float to){
-		int numOfVert = (int)ceil(40 * fabs(to - from) / (2 * M_PI)) + 1;
-		float step = (to - from) / (numOfVert - 1);
-		vertexBuffer.clear();
-		for (int i = 0; i < numOfVert; i++){
-			Vector4f p1, p2;
-			p1.x = center.x + cos(from + i*step)*radius;
-			p1.y = center.y + sin(from + i*step)*radius;
-			p1.z = center.z;
-			p1.w = 1;
-			vertexBuffer.push_back(p1);
-		}
-		vertexBuffer.push_back(center);
-		drawFilledLoop();
-		vertexBuffer.clear();
-	}
-
-	void drawEllipseFilled(Vector4f center, float a, float b){
-		vertexBuffer.clear();
-		for (int i = 0; i < 40; i++)
-		{
-			float uhel = (float)(M_PI*i / 20.);
-			Vector4f p1;
-			p1.x = center.x + a*cos(uhel);
-			p1.y = center.y + b*sin(uhel);
-			p1.z = center.z;
-			p1.w = 1;
-			vertexBuffer.push_back(p1);
-		}
-		drawFilledLoop();
-		vertexBuffer.clear();
-	}
-
-	// TODO - dodelat Scan line seed fill pokud bude chut a potreba nejaky nastrel je v commitu 951b2f86 
-	void drawCircleFilled(Vector4f vec, float radii){
-		float tmpred = currColor->red;
-		currColor->red = -1;
-		renderCircle(vec, radii);
-		currColor->red = tmpred;
-		Matrix4f mat = computeTransformation();
-		Vector4f center = mat.mulByVec(vec);
-		std::vector<Vector4f> seeds;
-		seeds.push_back(center);
-		Color clr = Color(-1, -1, -1);
-
-		do{
-			Vector4f seed = seeds.back();
-			seeds.pop_back();
-			// right
-			for (int i = (int)seed.x; i < width - 1; i++)
-			{
-				setPixel(i, (int)seed.y, center.z, currColor);
-				//end
-				clr = getPixelColor(i + 1, (int)seed.y);
-				if (clr.compare(Color(-1, currColor->green, currColor->blue))){
-					break;
-				}
-			}
-			// left
-			for (size_t i = (int)seed.x; i >= 0; i--)
-			{
-				setPixel(i, (int)seed.y, center.z, currColor);
-				//end
-				clr = getPixelColor(i - 1, (int)seed.y);
-				if (clr.compare(Color(-1, currColor->green, currColor->blue))){
-					break;
-				}
-			}
-
-			clr = getPixelColor((int)seed.x, (int)seed.y + 1);
-			if (!clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr.compare(*currColor)){
-				seeds.push_back(Vector4f(seed.x, seed.y + 1, 0, 1));
-			}
-
-			clr = getPixelColor((int)seed.x, (int)seed.y - 1);
-			if (!clr.compare(Color(-1, currColor->green, currColor->blue)) && !clr.compare(*currColor)){
-				seeds.push_back(Vector4f(seed.x, seed.y - 1, 0, 1));
-			}
-
-		} while (!seeds.empty());
-	}
-};
+#endif
 

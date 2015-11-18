@@ -7,6 +7,9 @@
 
 #include "sgl.h"
 #include "objects.h"
+#include "graphic_primitives.h"
+#include "context.h"
+
 using namespace std;
 
 
@@ -63,7 +66,8 @@ const char* sglGetErrorString(sglEErrorCode error)
 Context **contextBuffer = NULL;
 int currContext = -1;
 
-bool transactionEnabled = false;
+bool transactionFragmentEnabled = false;
+bool transactionSceneEnabled = false;
 
 
 //---------------------------------------------------------------------------
@@ -76,6 +80,7 @@ void sglInit(void) {
 	{
 		contextBuffer[i] = NULL;
 	}
+	
 }
 
 void sglFinish(void) {
@@ -96,24 +101,29 @@ int sglCreateContext(int width, int height) {
 	{
 		if (contextBuffer[i] == NULL){
 			contextBuffer[i] = new Context(width, height);
-			if (contextBuffer[i] == NULL)
-				throw SGL_OUT_OF_MEMORY;
+			if (contextBuffer[i] == NULL){
+				setErrCode(SGL_OUT_OF_MEMORY);
+				return -1;
+				}
 
 			return i;
 		}
 	}
 	if (i == MAXCONTEXT){
-		throw SGL_OUT_OF_RESOURCES;
+		setErrCode(SGL_OUT_OF_RESOURCES);
+		return -1;
 	}
 	return i;
 }
 
 void sglDestroyContext(int id) {
 	if (id == currContext){
-		throw SGL_INVALID_OPERATION;
+		setErrCode( SGL_INVALID_OPERATION);
+		return;
 	}
 	if (id < 0 || id >= MAXCONTEXT || contextBuffer[id] == NULL){
-		throw  SGL_INVALID_VALUE;
+		setErrCode(  SGL_INVALID_VALUE);
+		return;
 	}
 	delete(contextBuffer[id]);
 	contextBuffer[id] = NULL;
@@ -121,7 +131,8 @@ void sglDestroyContext(int id) {
 
 void sglSetContext(int id) {
 	if (id < 0 || id >= MAXCONTEXT || contextBuffer[id] == NULL){
-		throw  SGL_INVALID_VALUE;
+		setErrCode(SGL_INVALID_VALUE);
+		return;
 	}
 	currContext = id;
 }
@@ -130,12 +141,13 @@ int sglGetContext(void) {
 	for (int i = 0; i < MAXCONTEXT; i++)
 	{
 		if (contextBuffer[i] == NULL){
-			throw SGL_INVALID_OPERATION;
+			setErrCode( SGL_INVALID_OPERATION);
 			break;
 		}
 	}
 	if (currContext == -1){
-		throw SGL_INVALID_OPERATION;
+		setErrCode( SGL_INVALID_OPERATION);
+		return -1;
 	}
 	return currContext;
 }
@@ -152,18 +164,20 @@ float *sglGetColorBufferPointer(void) {
 //---------------------------------------------------------------------------
 
 void sglClearColor(float r, float g, float b, float alpha) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode( SGL_INVALID_OPERATION);
 	}
 	contextBuffer[currContext]->setBcgColor(r, g, b);
 }
 
 void sglClear(unsigned what) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if ((what & ~(SGL_COLOR_BUFFER_BIT | SGL_DEPTH_BUFFER_BIT)) != 0){
-		throw SGL_INVALID_VALUE;
+		setErrCode(SGL_INVALID_VALUE);
+		return;
 	}
 	Context *con = contextBuffer[currContext];
 	if ((what&SGL_COLOR_BUFFER_BIT) == SGL_COLOR_BUFFER_BIT){
@@ -181,21 +195,24 @@ void sglClear(unsigned what) {
 }
 
 void sglBegin(sglEElementType mode) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if ((mode & ~(SGL_POINTS | SGL_LINES | SGL_LINE_STRIP | SGL_LINE_LOOP | SGL_TRIANGLES | SGL_POLYGON | SGL_AREA_LIGHT | SGL_LAST_ELEMENT_TYPE)) != 0){
-		throw SGL_INVALID_ENUM;
+		setErrCode(SGL_INVALID_ENUM);
+		return;
 	}
 	contextBuffer[currContext]->setVertexDrawMode(mode);
-	transactionEnabled = true;
+	transactionFragmentEnabled = true;
 }
 
 void sglEnd(void) {
-	if (transactionEnabled != true){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled != true){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
-	transactionEnabled = false;
+	transactionFragmentEnabled = false;
 	Context* con = contextBuffer[currContext];
 	if (con->getVertexDrawMode() == SGL_POINTS){
 		con->drawPoints();
@@ -231,11 +248,13 @@ void sglVertex2f(float x, float y) {
 }
 
 void sglCircle(float x, float y, float z, float radius) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if (radius < 0){
-		throw SGL_INVALID_VALUE;
+		setErrCode(SGL_INVALID_VALUE);
+		return;
 	}
 	Vector4f v;
 	v.x = x;
@@ -251,11 +270,13 @@ void sglCircle(float x, float y, float z, float radius) {
 }
 
 void sglEllipse(float x, float y, float z, float a, float b) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if (a < 0 || b < 0){
-		throw SGL_INVALID_VALUE;
+		setErrCode(SGL_INVALID_VALUE);
+		return;
 	}
 	Vector4f v;
 	v.x = x;
@@ -272,11 +293,13 @@ void sglEllipse(float x, float y, float z, float a, float b) {
 }
 
 void sglArc(float x, float y, float z, float radius, float from, float to) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if (radius < 0){
-		throw SGL_INVALID_VALUE;
+		setErrCode(SGL_INVALID_VALUE);
+		return;
 	}
 	Vector4f v;
 	v.x = x;
@@ -295,11 +318,13 @@ void sglArc(float x, float y, float z, float radius, float from, float to) {
 //---------------------------------------------------------------------------
 
 void sglMatrixMode(sglEMatrixMode mode) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if ((mode & ~(SGL_MODELVIEW | SGL_PROJECTION)) != 0){
-		throw SGL_INVALID_ENUM;
+		setErrCode(SGL_INVALID_ENUM);
+		return;
 	}
 	if ((mode&SGL_MODELVIEW) == SGL_MODELVIEW){
 		contextBuffer[currContext]->setMatrixMode(0);
@@ -311,47 +336,54 @@ void sglMatrixMode(sglEMatrixMode mode) {
 }
 
 void sglPushMatrix(void) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	contextBuffer[currContext]->pushMatrix();
 }
 
 void sglPopMatrix(void) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if (contextBuffer[currContext]->getMatrixStack()->size() == 1){
-		throw SGL_STACK_UNDERFLOW;
+		setErrCode(SGL_STACK_UNDERFLOW);
+		return;
 	}
 	contextBuffer[currContext]->popMatrix();
 }
 
 void sglLoadIdentity(void) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	contextBuffer[currContext]->getMatrixStack()->top() = Matrix4f();
 }
 
 void sglLoadMatrix(const float *matrix) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	contextBuffer[currContext]->getMatrixStack()->top() = Matrix4f(matrix);
 }
 
 void sglMultMatrix(const float *matrix) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	Matrix4f mul(matrix);
 	contextBuffer[currContext]->getMatrixStack()->top().mulByMatrixToItself(&mul);
 }
 
 void sglTranslate(float x, float y, float z) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	Matrix4f tr;
 	tr.m[0][3] = x;
@@ -361,8 +393,9 @@ void sglTranslate(float x, float y, float z) {
 }
 
 void sglScale(float scalex, float scaley, float scalez) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	Matrix4f sc;
 	sc.m[0][0] = scalex;
@@ -372,8 +405,9 @@ void sglScale(float scalex, float scaley, float scalez) {
 }
 
 void sglRotate2D(float angle, float centerx, float centery) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	sglTranslate(centerx, centery, 0);
 
@@ -388,8 +422,9 @@ void sglRotate2D(float angle, float centerx, float centery) {
 }
 
 void sglRotateY(float angle) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 
 	Matrix4f rotY;
@@ -401,11 +436,13 @@ void sglRotateY(float angle) {
 }
 
 void sglOrtho(float left, float right, float bottom, float top, float near, float far) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if (right == left || top == bottom || far == near){
-		throw SGL_INVALID_VALUE;
+		setErrCode(SGL_INVALID_VALUE);
+		return;
 	}
 	Matrix4f mat;
 	mat.m[0][0] = 2 / (right - left);
@@ -418,11 +455,13 @@ void sglOrtho(float left, float right, float bottom, float top, float near, floa
 }
 
 void sglFrustum(float left, float right, float bottom, float top, float near, float far) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if (near <= 0 || far <= 0 || left == right || top == bottom || far == near){
-		throw SGL_INVALID_VALUE;
+		setErrCode(SGL_INVALID_VALUE);
+		return;
 	}
 	Matrix4f mat;
 	mat.m[0][0] = (2 * near) / (right - left);
@@ -437,11 +476,13 @@ void sglFrustum(float left, float right, float bottom, float top, float near, fl
 }
 
 void sglViewport(int x, int y, int width, int height) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if (width < 0 || height < 0){
-		throw SGL_INVALID_VALUE;
+		setErrCode(SGL_INVALID_VALUE);
+		return;
 	}
 	Matrix4f mat;
 	mat.m[0][0] = (float)width / 2;
@@ -456,19 +497,22 @@ void sglViewport(int x, int y, int width, int height) {
 //---------------------------------------------------------------------------
 
 void sglColor3f(float r, float g, float b) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	contextBuffer[currContext]->setDrawColor(r, g, b);
 }
 
 //Sets the current drawing mode of !!!CLOSED!!! areas for subsequent operations.
 void sglAreaMode(sglEAreaMode mode) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if ((mode & ~(SGL_POINT | SGL_LINE | SGL_FILL)) != 0){
-		throw SGL_INVALID_ENUM;
+		setErrCode(SGL_INVALID_ENUM);
+		return;
 	}
 
 	if ((mode & SGL_LINE) == SGL_LINE){
@@ -483,21 +527,25 @@ void sglAreaMode(sglEAreaMode mode) {
 }
 
 void sglPointSize(float size) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if (size < 0){
-		throw SGL_INVALID_VALUE;
+		setErrCode(SGL_INVALID_VALUE);
+		return;
 	}
 	contextBuffer[currContext]->setPointSize(size);
 }
 
 void sglEnable(sglEEnableFlags cap) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if ((cap & ~(SGL_DEPTH_TEST)) != 0){
-		throw SGL_INVALID_ENUM;
+		setErrCode(SGL_INVALID_ENUM);
+		return;
 	}
 	if ((cap&SGL_DEPTH_TEST) == SGL_DEPTH_TEST){
 		contextBuffer[currContext]->setDepthTest(true);
@@ -505,11 +553,13 @@ void sglEnable(sglEEnableFlags cap) {
 }
 
 void sglDisable(sglEEnableFlags cap) {
-	if (transactionEnabled || contextBuffer[currContext] == NULL){
-		throw SGL_INVALID_OPERATION;
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
 	}
 	if ((cap & ~(SGL_DEPTH_TEST)) != 0){
-		throw SGL_INVALID_ENUM;
+		setErrCode(SGL_INVALID_ENUM);
+		return;
 	}
 	if ((cap&SGL_DEPTH_TEST) == SGL_DEPTH_TEST){
 		contextBuffer[currContext]->setDepthTest(false);
@@ -520,15 +570,74 @@ void sglDisable(sglEEnableFlags cap) {
 // RayTracing oriented functions
 //---------------------------------------------------------------------------
 
-void sglBeginScene() {}
+void sglBeginScene() {
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
+	}
+	contextBuffer[currContext]->initializeScene();
+	transactionSceneEnabled = true;
+}
 
-void sglEndScene() {}
+void sglEndScene() {
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
+	}
+	transactionFragmentEnabled = false;
+}
 
+/// Sphere definition.
+/**
+  Adds a sphere primitive to the primitive list.
+
+  @param x [in] sphere center x coordinate
+  @param y [in] sphere center y coordinate
+  @param z [in] sphere center z coordinate
+  @param radius [in] sphere radius
+
+  ERRORS:
+   - SGL_INVALID_OPERATION
+    No context has been allocated yet or sglSphere() is called within a
+    sglBegin() / sglEnd() sequence or sglSphere() is called outside
+    sglBeginScene() / sglEndScene() sequence.
+ */
 void sglSphere(const float x,
 	const float y,
 	const float z,
-	const float radius) {}
+	const float radius) {
+	if (!transactionSceneEnabled || transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
+	}
+	
+	}
 
+
+/// Surface material specification.
+/**
+  Sets the material properties for subsequent graphics primitives specification.
+
+  SGL employs the popular Phong model. Usually, 0 <= Kd <= 1 and 0 <= Ks <= 1,
+  though it is not required that Kd + Ks == 1.
+  Transmitting objects (T > 0) are considered to have two sides for algorithms
+  that need these (normally objects are treated as having only one side).
+
+  @param r [in] the red color component
+  @param g [in] the green color component
+  @param b [in] the blue color component
+  @param kd [in] the diffuse coefficient
+  @param ks [in] the specular coefficient
+  @param shine [in] Phong cosine power for highlights
+  @param T [in] the transmittance coefficient (fraction of contribution of the
+                transmitting/refracted ray)
+  @param ior [in] index of refraction
+
+  ERRORS:
+   - SGL_INVALID_OPERATION
+    No context has been allocated yet or sglMaterial() is called within a
+    sglBegin() / sglEnd() sequence.
+ */
 void sglMaterial(const float r,
 	const float g,
 	const float b,
@@ -538,6 +647,24 @@ void sglMaterial(const float r,
 	const float T,
 	const float ior) {}
 
+
+/// Point light specification.
+/**
+  Adds a point light to the scene.
+
+  @param x [in] x coordinate of the position of the light.
+  @param y [in] y coordinate of the position of the light.
+  @param z [in] z coordinate of the position of the light.
+  @param r [in] light intensity in the red channel.
+  @param g [in] light intensity in the green channel.
+  @param b [in] light intensity in the blue channel.
+
+  ERRORS:
+   - SGL_INVALID_OPERATION
+    No context has been allocated yet or sglPointLight() is called within a
+    sglBegin() / sglEnd() sequence or sglPointLight() is called outside
+    sglBeginScene() / sglEndScene() sequence.
+ */
 void sglPointLight(const float x,
 	const float y,
 	const float z,
@@ -545,15 +672,64 @@ void sglPointLight(const float x,
 	const float g,
 	const float b) {}
 
+/// Rendering the image (ray tracing).
+/**
+  Computes an image of the scene using ray tracing.
+
+  ERRORS:
+   - SGL_INVALID_OPERATION
+    No context has been allocated yet or sglRayTraceScene() is called within a
+    sglBegin() / sglEnd() sequence or sglRayTraceScene() is called within a
+    sglBeginScene() / sglEndScene() sequence.
+*/
 void sglRayTraceScene() {}
 
+//NOT USED
 void sglRasterizeScene() {}
 
+/// Environment map specification.
+/**
+  Sets the HDR environment map defining the "background" using a rectangular
+  texture. If defined it replaces the background color (set with sglClearColor())
+  for both primary and secondary rays.
+
+  @param width [in] texture width
+  @param height [in] texture height
+  @param texels [in] texture elements (width*height RGB float triplets)
+
+  ERRORS:
+   - SGL_INVALID_OPERATION
+    No context has been allocated yet or sglEnvironmentMap() is called within a
+    sglBegin() / sglEnd() sequence.
+*/
 void sglEnvironmentMap(const int width,
 	const int height,
 	float *texels)
 {}
 
+/// Emissive material specification.
+/**
+
+  Sets the emissive properties for subsequent area lights geometry (SGL_POLYGONs)
+  specification. The geometry represents patches of a single area light until
+  another call to sglEmissiveMaterial() occurs. Only triangle patches need to be
+  supported.
+
+  The total energy emitted from one area light patch is (r, g, b) * patch_area.
+  The attenuation with the distance d is 1 / (c0 + c1*d + c2*d^2).
+
+  @param r [in] the red color component of light intensity per unit area
+  @param g [in] the green color component of light intensity per unit area
+  @param b [in] the blue color component of light intensity per unit area
+  @param c0 [in] the constant attenuation coefficient
+  @param c1 [in] the linear attenuation coefficient
+  @param c2 [in] the quadratic attenuation coefficient
+
+  ERRORS:
+   - SGL_INVALID_OPERATION
+    No context has been allocated yet or sglEmissiveMaterial() is called within
+    a sglBegin() / sglEnd() sequence.
+ */
 void sglEmissiveMaterial(
 	const float r,
 	const float g,
