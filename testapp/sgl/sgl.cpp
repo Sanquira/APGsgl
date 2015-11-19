@@ -639,7 +639,13 @@ void sglPointLight(const float x,
 	const float z,
 	const float r,
 	const float g,
-	const float b) {}
+	const float b) {
+	if (!transactionSceneEnabled || transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
+	}
+	contextBuffer[currContext]->addLight(Vector4f(x,y,z,1),Color(r,g,b));
+	}
 
 /// Rendering the image (ray tracing).
 /**

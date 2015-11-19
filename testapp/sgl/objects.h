@@ -34,6 +34,10 @@ public:
 		}
 		return false;
 	}
+	
+	void toTerminal(){
+		cout << red << ", " << green << ", " << blue << endl;
+	}
 
 };
 
@@ -92,6 +96,13 @@ public:
 		y = y / w;
 		z = z / w;
 		w = w / w;
+	}
+	
+	void normalize(){
+		float norm = sqrt(x*x+y*y+z*z);
+		x = x/norm;
+		y = y/norm;
+		z = z/norm;
 	}
 	
 	void removeHomo(){
@@ -289,9 +300,6 @@ bool compareVector4fX(Vector4f i, Vector4f j) {
 	return (i.x < j.x);
 }
 
-class AbstractLight {
-
-};
 
 #endif
 

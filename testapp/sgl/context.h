@@ -32,7 +32,7 @@ private:
 	int width, height;
 	std::vector<Vector4f> vertexBuffer;
 	vector<std::unique_ptr<AbstractPrimitivum>> scenePrimitives;
-	vector<std::unique_ptr<AbstractLight>> lights;
+	vector<std::unique_ptr<PointLight>> lights;
 	std::stack<Matrix4f> modelViewStack, projectionStack;
 	std::stack<Matrix4f> *currMatrixStack;
 	int areaDrawMode, vertexDrawMode;
@@ -565,12 +565,11 @@ public:
 	
 	void initializeScene(){
 		scenePrimitives.clear();
+		lights.clear();
 	}
 	
 	void addSphere(Vector4f center, float radius){
 		scenePrimitives.push_back(make_unique<SpherePrimitivum>(center,radius,material));
-		Matrix4f tmp = computeTransformation();
-		scenePrimitives.back()->setTransformationMatrix(tmp);
 	}
 
 	void addTriangle(){
@@ -578,22 +577,33 @@ public:
 		cout << vertexBuffer.size() << endl;
 	}
 	
-	void setMaterial(Material &mat){
-		this->material = material;
+	void addLight(Vector4f position, Color clr){
+		lights.push_back(make_unique<PointLight>(position,clr));
+	}
+	
+	void setMaterial(Material mat){
+		this->material = mat;
 	}
 	
 	void renderRayTrace(){
-		Vector4f camera = Vector4f(0,0,-2,1);
-		
-//		int x = 400;
-//		int y = 300;
+		Vector4f camera = Vector4f(0,0,0,1);	//eye space
+		camera = modelViewStack.top().inverse().mulByVec(camera); //world space
+		Matrix4f iv = viewport.inverse();
+		Matrix4f ips = projectionStack.top().inverse();
+		Matrix4f imv = modelViewStack.top().inverse();
+//		int x = 320;
+//		int y = 410;
 		for (int y=0;y<height;y++){
 			for(int x=0;x<width;x++){
 				Vector4f pixel = Vector4f(x,y,-1,1);
-				pixel = computeTransformation().inverse().mulByVec(pixel);
+				pixel = iv.mulByVec(pixel);	//normalized space
+				pixel = ips.mulByVec(pixel);
+				pixel.z = -1;
+				pixel.w = 0;	//eye space
+				pixel = imv.mulByVec(pixel); //world space
 				for(auto & obj : scenePrimitives){
 					if(obj->intersect(camera,pixel)){
-						Color clr = obj->computePixelColor(camera,pixel); //TODO lights
+						Color clr = obj->computePixelColor(camera,pixel,&lights);
 						setPixel(x,y,0,clr);
 					}
 				}
