@@ -573,8 +573,12 @@ public:
 	}
 
 	void addTriangle(){
-		//TODO
-		cout << vertexBuffer.size() << endl;
+		if(vertexBuffer.size()==3){
+			scenePrimitives.push_back(make_unique<TrianglePrivitivum>(vertexBuffer[0],vertexBuffer[1],vertexBuffer[2],material));
+			vertexBuffer.clear();
+		}else{
+			cerr << "ERROR!!! addTriangle is NOT triangle!!!" << endl;
+		}
 	}
 	
 	void addLight(Vector4f position, Color clr){
@@ -591,8 +595,8 @@ public:
 		Matrix4f iv = viewport.inverse();
 		Matrix4f ips = projectionStack.top().inverse();
 		Matrix4f imv = modelViewStack.top().inverse();
-//		int x = 320;
-//		int y = 410;
+//		int x = 401;
+//		int y = 300;
 		for (int y=0;y<height;y++){
 			for(int x=0;x<width;x++){
 				Vector4f pixel = Vector4f(x,y,-1,1);
@@ -609,7 +613,6 @@ public:
 				}
 			}
 		}
-		
 		
 		
 	}

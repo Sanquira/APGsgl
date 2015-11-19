@@ -172,71 +172,98 @@ public:
 
 };
 
-//class TrianglePrivitivum : public AbstractPrimitivum {
-//private:
-//	Vector4f points[3];
+class TrianglePrivitivum : public AbstractPrimitivum {
+private:
+	Vector4f points[3];
+	Vector4f intPoint;
+	Vector4f toCamVec;
+	Matrix4f tran;
 
-//	void upgradeTransformationMatrix(){}
-//	
-//	bool barycentricInside(Vector4f &point){
-//		Vector4f u = points[1].minus(points[0]);
-//		Vector4f v = points[2].minus(points[0]);
-//		Vector4f w = point.minus(points[0]);
-//		
-//		Vector4f vw = v.cross(w);
-//		Vector4f vu = v.cross(u);
-//		
-//		if(vw.dotNoHomo(vu)<0){
-//			return false;
-//		}
-//		
-//		Vector4f uw = u.cross(w);
-//		vu = vu.mulByConst(-1);
-//		
-//		if(uw.dotNoHomo(vu)<0){
-//			return false;
-//		}
-//		
-//		float denom = sqrt(vu.dotNoHomo(vu));
-//		float r = sqrt(vw.dotNoHomo(vw))/denom;
-//		float t = sqrt(uw.dotNoHomo(uw))/denom;
-//		
-//		return (r+t <= 1);
-//		
-//	}
+	void upgradeTransformationMatrix(){}
+	
+	bool barycentricInside(Vector4f &point){
+		Vector4f u = points[1].minus(points[0]);
+		Vector4f v = points[2].minus(points[0]);
+		Vector4f w = point.minus(points[0]);
+		
+		Vector4f vw = v.cross(w);
+		Vector4f vu = v.cross(u);
+		
+		if(vw.dotNoHomo(vu)<0){
+			return false;
+		}
+		
+		Vector4f uw = u.cross(w);
+		vu = vu.mulByConst(-1);
+		
+		if(uw.dotNoHomo(vu)<0){
+			return false;
+		}
+		
+		float denom = sqrt(vu.dotNoHomo(vu));
+		float r = sqrt(vw.dotNoHomo(vw))/denom;
+		float t = sqrt(uw.dotNoHomo(uw))/denom;
+		
+		return (r+t <= 1);
+		
+	}
+	
+	virtual Vector4f computeToCam(){
+		return toCamVec;
+	}
+	
+	virtual Vector4f computeNormal(){
+		Vector4f u = points[1].minus(points[0]);
+		Vector4f v = points[2].minus(points[0]);
+		Vector4f ret = u.cross(v);
+		ret.normalize();
+		return ret;
+	}
+	
+	virtual Vector4f computeToLight(Vector4f lightPos){
+		Vector4f ret = lightPos.minus(intPoint);
+		ret.normalize();
+		return ret;
+	}
 
-//public:
+public:
 
-//	TrianglePrivitivum(Vector4f v1, Vector4f v2, Vector4f v3, Material material){
-//		setMaterial(material);
-//		points[0] = v1;
-//		points[1] = v2;
-//		points[2] = v3;
-//	}
+	TrianglePrivitivum(Vector4f v1, Vector4f v2, Vector4f v3, Material material){
+		setMaterial(material);
+		points[0] = v1;
+		points[1] = v2;
+		points[2] = v3;
+		tran = invTran.inverse();
+	}
 
-//	virtual void intersect(Vector4f &origin, Vector4f &ray){
-//		Vector4f to = transformVector(origin);
-//		ray.removeHomo();
-//		Vector4f tr = transformVector(ray);
-//		
-//		Vector4f tmp = points[0].minus(points[1]);
-//		Vector4f normalPlane = points[2].minus(points[1]).cross(tmp);
-//		
-//		tmp = points[0].minus(to);
-//		float t = normalPlane.dotNoHomo(tmp)/normalPlane.dotNoHomo(tr);
-//		
-//		tmp = tr.mulByConst(-t);
-//		tmp = to.minus(tmp);
-//		
-//		if(barycentricInside(tmp)){
-//			cout << "inside" << endl;
-//		}else{
-//			cout << "not inside" << endl;
-//		}
-//		
-//	}
+	virtual bool intersect(Vector4f &origin, Vector4f &ray){
+		Vector4f to = transformVector(origin);
+		ray.removeHomo();
+		Vector4f tr = transformVector(ray);
+		
+		Vector4f tmp = points[0].minus(points[1]);
+		Vector4f normalPlane = points[2].minus(points[1]).cross(tmp);
+		
+		tmp = points[0].minus(to);
+		float t = normalPlane.dotNoHomo(tmp)/normalPlane.dotNoHomo(tr);
+		
+		tmp = tr.mulByConst(-t);
+		tmp = to.minus(tmp);
+		
+		if(barycentricInside(tmp)){
+			Vector4f tmp = tr.mulByConst(-t);
+			tmp = to.minus(tmp);
+			intPoint = tran.mulByVec(tmp);
+			toCamVec = origin.minus(intPoint);
+			toCamVec.normalize();
+			return true;
+		}
+		
+		return false;
+		
+	}
 
-//};
+};
 
 #endif
 

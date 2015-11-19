@@ -616,24 +616,6 @@ void sglMaterial(const float r,
 	contextBuffer[currContext]->setMaterial(mat);
 }
 
-
-/// Point light specification.
-/**
-  Adds a point light to the scene.
-
-  @param x [in] x coordinate of the position of the light.
-  @param y [in] y coordinate of the position of the light.
-  @param z [in] z coordinate of the position of the light.
-  @param r [in] light intensity in the red channel.
-  @param g [in] light intensity in the green channel.
-  @param b [in] light intensity in the blue channel.
-
-  ERRORS:
-   - SGL_INVALID_OPERATION
-    No context has been allocated yet or sglPointLight() is called within a
-    sglBegin() / sglEnd() sequence or sglPointLight() is called outside
-    sglBeginScene() / sglEndScene() sequence.
- */
 void sglPointLight(const float x,
 	const float y,
 	const float z,
@@ -647,16 +629,6 @@ void sglPointLight(const float x,
 	contextBuffer[currContext]->addLight(Vector4f(x,y,z,1),Color(r,g,b));
 	}
 
-/// Rendering the image (ray tracing).
-/**
-  Computes an image of the scene using ray tracing.
-
-  ERRORS:
-   - SGL_INVALID_OPERATION
-    No context has been allocated yet or sglRayTraceScene() is called within a
-    sglBegin() / sglEnd() sequence or sglRayTraceScene() is called within a
-    sglBeginScene() / sglEndScene() sequence.
-*/
 void sglRayTraceScene() {
 	if (transactionSceneEnabled || transactionFragmentEnabled || contextBuffer[currContext] == NULL){
 		setErrCode(SGL_INVALID_OPERATION);
