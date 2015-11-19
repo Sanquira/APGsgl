@@ -20,7 +20,7 @@ class Color {
 public:
 	float red=0, green=0, blue=0;
 
-	Color(){	}
+	Color(){}
 
 	Color(float R, float G, float B){
 		red = R;

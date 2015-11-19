@@ -15,6 +15,8 @@
 #include <climits>
 #include <memory>
 
+#define FINFINITY std::numeric_limits<float>::infinity()
+
 using namespace std;
 
 class PointLight {
@@ -37,12 +39,11 @@ class AbstractPrimitivum {
 	
 protected:
 	
-	Matrix4f invTran;
 	Material material;
+	Vector4f intPoint;
+	Vector4f toCamVec;
 	
-	virtual void upgradeTransformationMatrix() = 0;
-
-	virtual Vector4f computeToCam() = 0;	
+	virtual Vector4f computeToCam(Vector4f origin) = 0;
 	virtual Vector4f computeNormal() = 0;
 	virtual Vector4f computeToLight(Vector4f lightPos) = 0;
 
@@ -50,35 +51,18 @@ public:
 
 	AbstractPrimitivum(){}
 
-	Material getMaterial(){
-		return material;
-	}
+	virtual ~AbstractPrimitivum(){}
+
+	virtual float intersect(Vector4f &origin, Vector4f &ray) = 0;
 
 	void setMaterial(Material mat){
 		material = mat;
-	}
-
-	void setTransformationMatrix(Matrix4f &mat){
-		Matrix4f tmp = mat.inverse();
-		invTran = invTran.mulByMatrix(tmp);
-	}
-	
-	Matrix4f getInverseTransformationMatrix(){
-		return invTran;
-	}
-	
-	Vector4f transformVector(Vector4f &vec){
-		return invTran.mulByVec(vec);
-	}
-	
-	virtual ~AbstractPrimitivum(){}
-
-	virtual bool intersect(Vector4f &origin, Vector4f &ray) = 0;
+	}	
 	
 	Color computePixelColor(Vector4f origin, Vector4f ray, vector<std::unique_ptr<PointLight>> *lights){
 		Vector4f color;
 		Vector4f normalVec = computeNormal();
-		Vector4f toCamVec = computeToCam();
+		Vector4f toCamVec = computeToCam(origin);
 		for(auto & l : *lights){
 			Vector4f toLightVec = computeToLight(l->position);
 			float cosa = toLightVec.dotNoHomo(normalVec);
@@ -101,23 +85,31 @@ public:
 
 class SpherePrimitivum : public AbstractPrimitivum {
 private:
+
 	Vector4f center;
 	float radius;
-	Vector4f intPoint;
-	Vector4f toCamVec;
+
+	Matrix4f invTran;
 	Matrix4f tran;
 	
-	virtual void upgradeTransformationMatrix(){
+	void setTransformationMatrix(){
 		invTran.m[0][0] = 1/radius;
 		invTran.m[1][1] = 1/radius;
 		invTran.m[2][2] = 1/radius;
-		invTran.m[0][3] = -center.x;
-		invTran.m[1][3] = -center.y;
-		invTran.m[2][3] = -center.z;
+		invTran.m[0][3] = -center.x/radius;
+		invTran.m[1][3] = -center.y/radius;
+		invTran.m[2][3] = -center.z/radius;
+		tran = invTran.inverse();
 	}
 	
-	virtual Vector4f computeToCam(){
-		return toCamVec;
+	Vector4f transformVector(Vector4f &vec){
+		return invTran.mulByVec(vec);
+	}
+	
+	virtual Vector4f computeToCam(Vector4f origin){
+		Vector4f ret = origin.minus(intPoint);
+		ret.normalize();
+		return ret;
 	}
 	
 	virtual Vector4f computeNormal(){
@@ -137,23 +129,22 @@ public:
 	SpherePrimitivum(Vector4f center, float radius, Material material){
 		this->center = center;
 		this->radius = radius;
-		upgradeTransformationMatrix();
 		setMaterial(material);
-		tran = invTran.inverse();
+		setTransformationMatrix();
 	}
 	
-	virtual bool intersect(Vector4f &origin, Vector4f &ray){
+	virtual float intersect(Vector4f &origin, Vector4f &ray){
 		Vector4f to = transformVector(origin);
 		ray.removeHomo();
 		Vector4f tr = transformVector(ray);
 		
 		float a = tr.dotNoHomo(tr);
 		float b = to.mulByConst(2).dotNoHomo(tr);
-		float c = to.dotNoHomo(to) - 0.25;
+		float c = to.dotNoHomo(to) - 1;
 
 		float D = (b * b) - (4 * a * c);
 		if (D < 0) {	// No intersection
-			return false;
+			return FINFINITY;
 		}
 		float d1 = (-b + sqrt(D)) / (2 * a);
 		float d2 = (-b - sqrt(D)) / (2 * a);
@@ -163,11 +154,9 @@ public:
 			Vector4f tmp = tr.mulByConst(-ret);
 			tmp = to.minus(tmp);
 			intPoint = tran.mulByVec(tmp);
-			toCamVec = origin.minus(intPoint);
-			toCamVec.normalize();
-			return true;
+			return ret;
 		}
-		return false; // no positive intersect
+		return FINFINITY; // no positive intersect
 	}
 
 };
@@ -175,11 +164,26 @@ public:
 class TrianglePrivitivum : public AbstractPrimitivum {
 private:
 	Vector4f points[3];
-	Vector4f intPoint;
-	Vector4f toCamVec;
-	Matrix4f tran;
-
-	void upgradeTransformationMatrix(){}
+	
+	virtual Vector4f computeToCam(Vector4f origin){
+		Vector4f ret = origin.minus(intPoint);
+		ret.normalize();
+		return ret;
+	}
+	
+	virtual Vector4f computeNormal(){
+		Vector4f u = points[1].minus(points[0]);
+		Vector4f v = points[2].minus(points[0]);
+		Vector4f ret = u.cross(v);
+		ret.normalize();
+		return ret;
+	}
+	
+	virtual Vector4f computeToLight(Vector4f lightPos){
+		Vector4f ret = lightPos.minus(intPoint);
+		ret.normalize();
+		return ret;
+	}
 	
 	bool barycentricInside(Vector4f &point){
 		Vector4f u = points[1].minus(points[0]);
@@ -205,25 +209,6 @@ private:
 		float t = sqrt(uw.dotNoHomo(uw))/denom;
 		
 		return (r+t <= 1);
-		
-	}
-	
-	virtual Vector4f computeToCam(){
-		return toCamVec;
-	}
-	
-	virtual Vector4f computeNormal(){
-		Vector4f u = points[1].minus(points[0]);
-		Vector4f v = points[2].minus(points[0]);
-		Vector4f ret = u.cross(v);
-		ret.normalize();
-		return ret;
-	}
-	
-	virtual Vector4f computeToLight(Vector4f lightPos){
-		Vector4f ret = lightPos.minus(intPoint);
-		ret.normalize();
-		return ret;
 	}
 
 public:
@@ -233,13 +218,12 @@ public:
 		points[0] = v1;
 		points[1] = v2;
 		points[2] = v3;
-		tran = invTran.inverse();
 	}
 
-	virtual bool intersect(Vector4f &origin, Vector4f &ray){
-		Vector4f to = transformVector(origin);
+	virtual float intersect(Vector4f &origin, Vector4f &ray){
+		Vector4f to = origin;
 		ray.removeHomo();
-		Vector4f tr = transformVector(ray);
+		Vector4f tr = ray;
 		
 		Vector4f tmp = points[0].minus(points[1]);
 		Vector4f normalPlane = points[2].minus(points[1]).cross(tmp);
@@ -252,15 +236,10 @@ public:
 		
 		if(barycentricInside(tmp)){
 			Vector4f tmp = tr.mulByConst(-t);
-			tmp = to.minus(tmp);
-			intPoint = tran.mulByVec(tmp);
-			toCamVec = origin.minus(intPoint);
-			toCamVec.normalize();
-			return true;
+			intPoint = to.minus(tmp);
+			return t;
 		}
-		
-		return false;
-		
+		return FINFINITY;
 	}
 
 };

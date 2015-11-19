@@ -39,9 +39,9 @@ using namespace std;
 #endif
 
 #ifdef TEST3
-//#define TEST_3A
+#define TEST_3A
 #define TEST_3B
-//#define TEST_3C
+#define TEST_3C
 #endif
 
 #ifdef TEST4

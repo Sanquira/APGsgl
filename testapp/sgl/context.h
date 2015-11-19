@@ -18,6 +18,8 @@
 #include "objects.h"
 #include "graphic_primitives.h"
 
+#define FINFINITY std::numeric_limits<float>::infinity()
+
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
     return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
@@ -65,7 +67,7 @@ public:
 		// buffers
 		colorBuffer = (float*)calloc(width*height * 3, sizeof(float));
 		depthBuffer = (float*)calloc(width*height, sizeof(float));
-		fill_n(depthBuffer, width*height, std::numeric_limits<float>::infinity());
+		fill_n(depthBuffer, width*height, FINFINITY);
 		vertexBuffer.reserve(8);
 		scenePrimitives.clear();
 		lights.clear();
@@ -209,7 +211,7 @@ public:
 	void cleanDepthBuffer(){
 		free(depthBuffer);
 		depthBuffer = (float*)calloc(width*height, sizeof(float));
-		fill_n(depthBuffer, width*height, std::numeric_limits<float>::infinity());
+		fill_n(depthBuffer, width*height, FINFINITY);
 	}
 
 	Matrix4f computeTransformation(){
@@ -595,8 +597,6 @@ public:
 		Matrix4f iv = viewport.inverse();
 		Matrix4f ips = projectionStack.top().inverse();
 		Matrix4f imv = modelViewStack.top().inverse();
-//		int x = 401;
-//		int y = 300;
 		for (int y=0;y<height;y++){
 			for(int x=0;x<width;x++){
 				Vector4f pixel = Vector4f(x,y,-1,1);
@@ -605,11 +605,18 @@ public:
 				pixel.z = -1;
 				pixel.w = 0;	//eye space
 				pixel = imv.mulByVec(pixel); //world space
-				for(auto & obj : scenePrimitives){
-					if(obj->intersect(camera,pixel)){
-						Color clr = obj->computePixelColor(camera,pixel,&lights);
-						setPixel(x,y,0,clr);
+				float minDist = FINFINITY;
+				int idxMin = -1;
+				for(int i=0;i<(int)scenePrimitives.size();i++){
+					float dist = (*scenePrimitives[i]).intersect(camera,pixel);
+					if(dist!=FINFINITY && dist<=minDist){
+						minDist=dist;
+						idxMin = i;
 					}
+				}
+				if(minDist!=FINFINITY){
+					Color clr = (*scenePrimitives[idxMin]).computePixelColor(camera,pixel,&lights);
+					setPixel(x,y,0,clr);
 				}
 			}
 		}

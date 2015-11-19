@@ -10,6 +10,8 @@
 #include "graphic_primitives.h"
 #include "context.h"
 
+#define FINFINITY std::numeric_limits<float>::infinity()
+
 using namespace std;
 
 
@@ -185,7 +187,7 @@ void sglClear(unsigned what) {
 		{
 			for (int j = 0; j < con->getHeight(); j++)
 			{
-				con->setPixel(i, j, -std::numeric_limits<float>::infinity(), con->getBcgColor());
+				con->setPixel(i, j, -FINFINITY, con->getBcgColor());
 			}
 		}
 	}
