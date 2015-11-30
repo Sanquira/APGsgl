@@ -230,7 +230,7 @@ public:
 //				return 1; /* singular matrix */
 			}
 				
-			pivinv = 1.0 / x[icol][icol];
+			pivinv = (float) 1.0 / x[icol][icol];
 			x[icol][icol] = 1.0 ;
 			for ( l = 0 ; l<n ; l++){
 				x[l][icol] = x[l][icol] * pivinv ;

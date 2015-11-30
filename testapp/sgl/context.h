@@ -289,7 +289,7 @@ public:
 		
 		int numOfVert = (int)ceil(40 * fabs(to - from) / (2 * M_PI)) + 1;
 		if((to-from)<0){
-			to+=2*M_PI;
+			to+=(float)(2*M_PI);
 		}
 		float step = (to - from) / (numOfVert - 1);
 
@@ -571,12 +571,12 @@ public:
 	}
 	
 	void addSphere(Vector4f center, float radius){
-		scenePrimitives.push_back(make_unique<SpherePrimitivum>(center,radius,material));
+		scenePrimitives.push_back(std::make_unique<SpherePrimitivum>(center,radius,material));
 	}
 
 	void addTriangle(){
 		if(vertexBuffer.size()==3){
-			scenePrimitives.push_back(make_unique<TrianglePrivitivum>(vertexBuffer[0],vertexBuffer[1],vertexBuffer[2],material));
+			scenePrimitives.push_back(std::make_unique<TrianglePrivitivum>(vertexBuffer[0],vertexBuffer[1],vertexBuffer[2],material));
 			vertexBuffer.clear();
 		}else{
 			cerr << "ERROR!!! addTriangle is NOT triangle!!!" << endl;
@@ -584,7 +584,7 @@ public:
 	}
 	
 	void addLight(Vector4f position, Color clr){
-		lights.push_back(make_unique<PointLight>(position,clr));
+		lights.push_back(std::make_unique<PointLight>(position,clr));
 	}
 	
 	void setMaterial(Material mat){
@@ -599,7 +599,7 @@ public:
 		Matrix4f imv = modelViewStack.top().inverse();
 		for (int y=0;y<height;y++){
 			for(int x=0;x<width;x++){
-				Vector4f pixel = Vector4f(x,y,-1,1);
+				Vector4f pixel = Vector4f((float)x,(float)y,-1,1);
 				pixel = iv.mulByVec(pixel);	//normalized space
 				pixel = ips.mulByVec(pixel);
 				pixel.z = -1;
