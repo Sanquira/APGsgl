@@ -571,12 +571,12 @@ public:
 	}
 	
 	void addSphere(Vector4f center, float radius){
-		scenePrimitives.push_back(std::make_unique<SpherePrimitivum>(center,radius,material));
+		scenePrimitives.push_back(make_unique<SpherePrimitivum>(center,radius,material));
 	}
 
 	void addTriangle(){
 		if(vertexBuffer.size()==3){
-			scenePrimitives.push_back(std::make_unique<TrianglePrivitivum>(vertexBuffer[0],vertexBuffer[1],vertexBuffer[2],material));
+			scenePrimitives.push_back(make_unique<TrianglePrivitivum>(vertexBuffer[0],vertexBuffer[1],vertexBuffer[2],material));
 			vertexBuffer.clear();
 		}else{
 			cerr << "ERROR!!! addTriangle is NOT triangle!!!" << endl;
@@ -584,7 +584,7 @@ public:
 	}
 	
 	void addLight(Vector4f position, Color clr){
-		lights.push_back(std::make_unique<PointLight>(position,clr));
+		lights.push_back(make_unique<PointLight>(position,clr));
 	}
 	
 	void setMaterial(Material mat){
@@ -615,13 +615,35 @@ public:
 					}
 				}
 				if(minDist!=FINFINITY){
-					Color clr = (*scenePrimitives[idxMin]).computePixelColor(camera,pixel,&lights);
+					Color clr = computePixelColor(scenePrimitives[idxMin],camera,pixel,&lights);
 					setPixel(x,y,0,clr);
 				}
 			}
 		}
 		
 		
+	}
+	
+	Color computePixelColor(std::unique_ptr<AbstractPrimitivum>& primitivum, Vector4f origin, Vector4f ray, vector<std::unique_ptr<PointLight>> *lights){
+		Color color;
+		Vector4f normalVec = (*primitivum).getNormal();
+		Vector4f toCamVec = (*primitivum).getToOrigin(origin);
+		for(auto & l : *lights){
+			Vector4f toLightVec = (*primitivum).getToLight(l->position);
+			float cosa = toLightVec.dotNoHomo(normalVec);
+			color.red +=  l->color.red * (*primitivum).material.kd * (*primitivum).material.color.red * cosa;
+			color.green +=  l->color.green * (*primitivum).material.kd * (*primitivum).material.color.green * cosa;
+			color.blue +=  l->color.blue * (*primitivum).material.kd * (*primitivum).material.color.blue * cosa;
+			toLightVec = normalVec.mulByConst(2*cosa).minus(toLightVec);
+			float cosb = toCamVec.dotNoHomo(toLightVec);
+			if(cosb<0){
+				cosb = 0;
+			}
+			color.red +=  l->color.red * (*primitivum).material.ks * pow(cosb,(*primitivum).material.shine);
+			color.green +=  l->color.green * (*primitivum).material.ks * pow(cosb,(*primitivum).material.shine);
+			color.blue +=  l->color.blue * (*primitivum).material.ks * pow(cosb,(*primitivum).material.shine);
+		}
+		return color;
 	}
 	
 	

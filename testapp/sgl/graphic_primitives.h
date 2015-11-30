@@ -39,16 +39,17 @@ class AbstractPrimitivum {
 	
 protected:
 	
-	Material material;
-	Vector4f intPoint;
 	Vector4f toCamVec;
-	
-	virtual Vector4f computeToCam(Vector4f origin) = 0;
-	virtual Vector4f computeNormal() = 0;
-	virtual Vector4f computeToLight(Vector4f lightPos) = 0;
 
 public:
 
+	Material material;
+	Vector4f intPoint;
+
+	virtual Vector4f getToOrigin(Vector4f origin) = 0;
+	virtual Vector4f getNormal() = 0;
+	virtual Vector4f getToLight(Vector4f lightPos) = 0;
+	
 	AbstractPrimitivum(){}
 
 	virtual ~AbstractPrimitivum(){}
@@ -59,27 +60,7 @@ public:
 		material = mat;
 	}	
 	
-	Color computePixelColor(Vector4f origin, Vector4f ray, vector<std::unique_ptr<PointLight>> *lights){
-		Vector4f color;
-		Vector4f normalVec = computeNormal();
-		Vector4f toCamVec = computeToCam(origin);
-		for(auto & l : *lights){
-			Vector4f toLightVec = computeToLight(l->position);
-			float cosa = toLightVec.dotNoHomo(normalVec);
-			color.x +=  l->color.red * material.kd * material.color.red * cosa;
-			color.y +=  l->color.green * material.kd * material.color.green * cosa;
-			color.z +=  l->color.blue * material.kd * material.color.blue * cosa;
-			toLightVec = normalVec.mulByConst(2*cosa).minus(toLightVec);
-			float cosb = toCamVec.dotNoHomo(toLightVec);
-			if(cosb<0){
-				cosb = 0;
-			}
-			color.x +=  l->color.red * material.ks * pow(cosb,material.shine);
-			color.y +=  l->color.green * material.ks * pow(cosb,material.shine);
-			color.z +=  l->color.blue * material.ks * pow(cosb,material.shine);
-		}
-		return Color(color.x, color.y, color.z);
-	}
+	
 
 };
 
@@ -106,25 +87,26 @@ private:
 		return invTran.mulByVec(vec);
 	}
 	
-	virtual Vector4f computeToCam(Vector4f origin){
+public:
+	
+	virtual Vector4f getToOrigin(Vector4f origin){
 		Vector4f ret = origin.minus(intPoint);
 		ret.normalize();
 		return ret;
 	}
 	
-	virtual Vector4f computeNormal(){
+	virtual Vector4f getNormal(){
 		Vector4f ret = intPoint.minus(center);
 		ret.normalize();
 		return ret;
 	}
 	
-	virtual Vector4f computeToLight(Vector4f lightPos){
+	virtual Vector4f getToLight(Vector4f lightPos){
 		Vector4f ret = lightPos.minus(intPoint);
 		ret.normalize();
 		return ret;
 	}
 	
-public:
 	
 	SpherePrimitivum(Vector4f center, float radius, Material material){
 		this->center = center;
@@ -165,26 +147,6 @@ class TrianglePrivitivum : public AbstractPrimitivum {
 private:
 	Vector4f points[3];
 	
-	virtual Vector4f computeToCam(Vector4f origin){
-		Vector4f ret = origin.minus(intPoint);
-		ret.normalize();
-		return ret;
-	}
-	
-	virtual Vector4f computeNormal(){
-		Vector4f u = points[1].minus(points[0]);
-		Vector4f v = points[2].minus(points[0]);
-		Vector4f ret = u.cross(v);
-		ret.normalize();
-		return ret;
-	}
-	
-	virtual Vector4f computeToLight(Vector4f lightPos){
-		Vector4f ret = lightPos.minus(intPoint);
-		ret.normalize();
-		return ret;
-	}
-	
 	bool barycentricInside(Vector4f &point){
 		Vector4f u = points[1].minus(points[0]);
 		Vector4f v = points[2].minus(points[0]);
@@ -212,6 +174,26 @@ private:
 	}
 
 public:
+
+	virtual Vector4f getToOrigin(Vector4f origin){
+		Vector4f ret = origin.minus(intPoint);
+		ret.normalize();
+		return ret;
+	}
+	
+	virtual Vector4f getNormal(){
+		Vector4f u = points[1].minus(points[0]);
+		Vector4f v = points[2].minus(points[0]);
+		Vector4f ret = u.cross(v);
+		ret.normalize();
+		return ret;
+	}
+	
+	virtual Vector4f getToLight(Vector4f lightPos){
+		Vector4f ret = lightPos.minus(intPoint);
+		ret.normalize();
+		return ret;
+	}
 
 	TrianglePrivitivum(Vector4f v1, Vector4f v2, Vector4f v3, Material material){
 		setMaterial(material);
