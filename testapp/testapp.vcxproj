@@ -108,6 +108,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nffstore.h" />
+    <ClInclude Include="sgl\context.h" />
+    <ClInclude Include="sgl\graphic_primitives.h" />
     <ClInclude Include="sgl\objects.h" />
     <ClInclude Include="sgl\sgl.h" />
     <ClInclude Include="timer.h" />

@@ -630,10 +630,22 @@ public:
 		Vector4f toCamVec = (*primitivum).getToOrigin(origin);
 		for(auto & l : *lights){
 			Vector4f toLightVec = (*primitivum).getToLight(l->position);
+			bool shade = false;
+			float minDist = primitivum->intersect(primitivum->intPoint, toLightVec.reverse())-0.001;
+			for (int i = 0; i < scenePrimitives.size(); i++){
+				float dist = (*scenePrimitives[i]).intersect(primitivum->intPoint, toLightVec.reverse());
+				if (dist < minDist){
+					shade = true;
+					break;
+				}
+			}
 			float cosa = toLightVec.dotNoHomo(normalVec);
-			color.red +=  l->color.red * (*primitivum).material.kd * (*primitivum).material.color.red * cosa;
-			color.green +=  l->color.green * (*primitivum).material.kd * (*primitivum).material.color.green * cosa;
-			color.blue +=  l->color.blue * (*primitivum).material.kd * (*primitivum).material.color.blue * cosa;
+			if (!shade) {
+				color.red +=  l->color.red * (*primitivum).material.kd * (*primitivum).material.color.red * cosa;
+				color.green +=  l->color.green * (*primitivum).material.kd * (*primitivum).material.color.green * cosa;
+				color.blue +=  l->color.blue * (*primitivum).material.kd * (*primitivum).material.color.blue * cosa;
+			}
+			
 			toLightVec = normalVec.mulByConst(2*cosa).minus(toLightVec);
 			float cosb = toCamVec.dotNoHomo(toLightVec);
 			if(cosb<0){

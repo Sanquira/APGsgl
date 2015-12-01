@@ -66,6 +66,15 @@ public:
 		ret.w = w;
 		return ret;
 	}
+
+	Vector4f reverse(){
+		Vector4f ret;
+		ret.x = -x;
+		ret.y = -y;
+		ret.z = -z;
+		ret.w = 0;
+		return ret;
+	}
 	
 	float dotNoHomo(Vector4f &vector){
 		float ret=0;
