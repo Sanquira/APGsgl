@@ -35,6 +35,12 @@ public:
 		return false;
 	}
 	
+	void add(Color clr, float val){
+		red += val * clr.red;
+		green += val * clr.green;
+		blue += val * clr.blue;
+	}
+	
 	void toTerminal(){
 		cout << red << ", " << green << ", " << blue << endl;
 	}
@@ -72,7 +78,7 @@ public:
 		ret.x = -x;
 		ret.y = -y;
 		ret.z = -z;
-		ret.w = 0;
+		ret.w = w;
 		return ret;
 	}
 	
@@ -97,6 +103,7 @@ public:
 		ret.x = x * num;
 		ret.y = y * num;
 		ret.z = z * num;
+		ret.w = w;
 		return ret;
 	}
 
@@ -108,10 +115,15 @@ public:
 	}
 	
 	void normalize(){
-		float norm = sqrt(x*x+y*y+z*z);
+		float norm = getSize();
 		x = x/norm;
 		y = y/norm;
 		z = z/norm;
+	}
+	
+	float getSize(){
+		float norm = sqrt(x*x+y*y+z*z);
+		return norm;
 	}
 	
 	void removeHomo(){
@@ -303,6 +315,11 @@ public:
 		this->T = T;
 		this->ior = ior;
 	}
+	
+	void toTerminal(){
+		cout << "kd: " << kd << ", ks: " << ks << ", shine: " << shine << ", T: " << T << ", ior: " << ior << endl;
+	}
+	
 };
 
 bool compareVector4fX(Vector4f i, Vector4f j) {

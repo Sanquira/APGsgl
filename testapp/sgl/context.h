@@ -19,6 +19,7 @@
 #include "graphic_primitives.h"
 
 #define FINFINITY std::numeric_limits<float>::infinity()
+#define MAX_RECURSION 8
 
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
@@ -415,7 +416,6 @@ public:
 	//FILLED OBJECTS
 	//------------------------------------------------------------------
 
-	//TODO - osetrit vodorovnou usecku
 	void drawFilledLoop(){
 		std::vector<Vector4f> prus;
 		Matrix4f mat = computeTransformation();
@@ -510,7 +510,6 @@ public:
 		vertexBuffer.clear();
 	}
 
-	// TODO - dodelat Scan line seed fill pokud bude chut a potreba nejaky nastrel je v commitu 951b2f86 
 	void drawCircleFilled(Vector4f vec, float radii){
 		float tmpred = currColor.red;
 		currColor.red = -1;
@@ -599,65 +598,154 @@ public:
 		Matrix4f imv = modelViewStack.top().inverse();
 		for (int y=0;y<height;y++){
 			for(int x=0;x<width;x++){
-				Vector4f pixel = Vector4f((float)x,(float)y,-1,1);
+				Vector4f pixel = Vector4f((float)x,(float)y,0,1);
 				pixel = iv.mulByVec(pixel);	//normalized space
 				pixel = ips.mulByVec(pixel);
 				pixel.z = -1;
 				pixel.w = 0;	//eye space
 				pixel = imv.mulByVec(pixel); //world space
-				float minDist = FINFINITY;
-				int idxMin = -1;
-				for(int i=0;i<(int)scenePrimitives.size();i++){
-					float dist = (*scenePrimitives[i]).intersect(camera,pixel);
-					if(dist!=FINFINITY && dist<=minDist){
-						minDist=dist;
-						idxMin = i;
-					}
-				}
-				if(minDist!=FINFINITY){
-					Color clr = computePixelColor(scenePrimitives[idxMin],camera,pixel,&lights);
-					setPixel(x,y,0,clr);
-				}
+				pixel.normalize();
+				Color clr = computeRecursionColor(0, camera, pixel);
+				setPixel(x,y,0,clr);
 			}
 		}
 		
 		
 	}
 	
-	Color computePixelColor(std::unique_ptr<AbstractPrimitivum>& primitivum, Vector4f origin, Vector4f ray, vector<std::unique_ptr<PointLight>> *lights){
+private: 	
+	Color computeRecursionColor(int depth, Vector4f origin, Vector4f ray){
+		Color clr;
+		Vector4f normalVec;
+		Vector4f intPoint;
+		
+		// find intpnt
+		float intDist = FINFINITY;
+		int idxMin = -1;
+		for(size_t i = 0; i < scenePrimitives.size(); i++){
+			Vector4f tmp = scenePrimitives[i]->intersect(origin,ray);
+			float dist = origin.minus(tmp).getSize();
+			if(tmp.w != -1 && dist <= intDist){
+				intPoint = tmp;
+				intDist = dist;
+				idxMin = i;
+			}
+		}
+		
+		// no intpnt
+		if(intDist == FINFINITY){
+			goto endLabel;
+		}
+		
+		// compute phong
+		clr = computePixelColor(scenePrimitives[idxMin], intPoint, origin, ray, &lights);
+		
+		// steps exceeded
+		if(depth >= MAX_RECURSION){
+			goto endLabel;
+		}
+		
+		normalVec = scenePrimitives[idxMin]->getNormal(intPoint);
+		
+		// compute reflected ray
+		if(scenePrimitives[idxMin]->material.ks != 0){
+			Vector4f refRay = reflectRay(ray, normalVec);
+			Color ret = Color(1,1,1);
+			ret = computeRecursionColor(++depth, intPoint, refRay);
+			
+			clr.add(ret, scenePrimitives[idxMin]->material.ks);
+		}
+
+		// compute refracted ray
+		if(scenePrimitives[idxMin]->material.T != 0){
+			Vector4f refRay = refractRay(ray, normalVec, scenePrimitives[idxMin]->material.ior);
+
+			// find refract out TODO
+			Vector4f tmp = scenePrimitives[idxMin]->intersect(intPoint,refRay);
+			if(tmp.w != -1){
+				refRay = refractRay(refRay, scenePrimitives[idxMin]->getNormal(tmp), 1/scenePrimitives[idxMin]->material.ior);
+				if(refRay.w!=-1){
+					Color ret = computeRecursionColor(++depth, tmp, refRay);
+					clr.add(ret, scenePrimitives[idxMin]->material.T);
+				}
+			}
+
+//			// no refract on other side
+//			Color ret = computeRecursionColor(++depth, intPoint, refRay);
+//			clr.add(ret, scenePrimitives[idxMin]->material.T);
+			
+		}
+		
+		endLabel:
+		
+		return clr;
+	}
+
+	Vector4f reflectRay(Vector4f ray, Vector4f normal){
+		float cth1 = ray.dotNoHomo(normal);
+		Vector4f ret = normal.mulByConst(2*cth1);
+		ret = ray.minus(ret);
+		ret.normalize();
+		return ret;
+	}
+	
+	Vector4f refractRay(Vector4f ray, Vector4f normal, float ior){
+		float pior = 1./ior;
+		float cth1 = ray.dotNoHomo(normal);
+		if(cth1==0){
+			return ray;
+		}
+		if(cth1>0){
+			cth1 = -cth1;
+		}
+		float cth2 = 1.-(pior*pior)*(1.-(cth1*cth1));
+		if(cth2 < 0){
+			return Vector4f(0,0,0,-1);
+		}
+		Vector4f ret = normal.mulByConst(pior*cth1+sqrt(cth2));
+		ret = ray.mulByConst(pior).minus(ret);
+		ret.normalize();
+		return ret;
+	}
+	
+	Color computePixelColor(std::unique_ptr<AbstractPrimitivum>& primitivum,Vector4f intPoint, Vector4f origin, Vector4f ray, vector<std::unique_ptr<PointLight>> *lights){
 		Color color;
-		Vector4f normalVec = (*primitivum).getNormal();
-		Vector4f toCamVec = (*primitivum).getToOrigin(origin);
+		Vector4f normalVec = primitivum->getNormal(intPoint);
+		Vector4f toCamVec = origin.minus(intPoint);
+		toCamVec.normalize();
+		float prColorRate = 1-primitivum->material.ks-primitivum->material.T; // TODO
 		for(auto & l : *lights){
-			Vector4f toLightVec = (*primitivum).getToLight(l->position);
-			bool shade = false;
-			float minDist = primitivum->intersect(primitivum->intPoint, toLightVec.reverse())-0.001;
-			for (int i = 0; i < scenePrimitives.size(); i++){
-				float dist = (*scenePrimitives[i]).intersect(primitivum->intPoint, toLightVec.reverse());
-				if (dist < minDist){
-					shade = true;
+			Vector4f toLightVec = l->position.minus(intPoint);
+			float distToLight = sqrt(toLightVec.dotNoHomo(toLightVec));
+			toLightVec = l->position.minus(intPoint);
+			toLightVec.normalize();
+			bool skipLight = false;
+			for (size_t i = 0; i < scenePrimitives.size(); i++){
+				Vector4f tmp = scenePrimitives[i]->intersect(intPoint, toLightVec);
+				float dist = intPoint.minus(tmp).getSize();
+				if(tmp.w != -1 && fabs(dist - distToLight) >= FEPSILON){
+					skipLight=true;
 					break;
 				}
 			}
-			float cosa = toLightVec.dotNoHomo(normalVec);
-			if (!shade) {
-				color.red +=  l->color.red * (*primitivum).material.kd * (*primitivum).material.color.red * cosa;
-				color.green +=  l->color.green * (*primitivum).material.kd * (*primitivum).material.color.green * cosa;
-				color.blue +=  l->color.blue * (*primitivum).material.kd * (*primitivum).material.color.blue * cosa;
-			}
+			if(!skipLight){
+				float cosa = toLightVec.dotNoHomo(normalVec);
+				color.red += prColorRate * l->color.red * primitivum->material.kd * primitivum->material.color.red * cosa;
+				color.green += prColorRate * l->color.green * primitivum->material.kd * primitivum->material.color.green * cosa;
+				color.blue += prColorRate * l->color.blue * primitivum->material.kd * primitivum->material.color.blue * cosa;
 			
-			toLightVec = normalVec.mulByConst(2*cosa).minus(toLightVec);
-			float cosb = toCamVec.dotNoHomo(toLightVec);
-			if(cosb<0){
-				cosb = 0;
+				toLightVec = normalVec.mulByConst(2*cosa).minus(toLightVec);
+				float cosb = toCamVec.dotNoHomo(toLightVec);
+				if(cosb<0){
+					cosb = 0;
+				}
+				color.red +=  l->color.red * primitivum->material.ks   * pow(cosb,primitivum->material.shine);
+				color.green +=  l->color.green * primitivum->material.ks * pow(cosb,primitivum->material.shine);
+				color.blue +=  l->color.blue * primitivum->material.ks * pow(cosb,primitivum->material.shine);
 			}
-			color.red +=  l->color.red * (*primitivum).material.ks * pow(cosb,(*primitivum).material.shine);
-			color.green +=  l->color.green * (*primitivum).material.ks * pow(cosb,(*primitivum).material.shine);
-			color.blue +=  l->color.blue * (*primitivum).material.ks * pow(cosb,(*primitivum).material.shine);
 		}
 		return color;
 	}
-	
 	
 };
 

@@ -16,6 +16,8 @@
 #include <memory>
 
 #define FINFINITY std::numeric_limits<float>::infinity()
+#define NULLVECTOR Vector4f(0,0,0,-1);
+#define FEPSILON 1e-2
 
 using namespace std;
 
@@ -36,25 +38,21 @@ public:
 };
 
 class AbstractPrimitivum {
-	
-protected:
-	
-	Vector4f toCamVec;
 
 public:
 
 	Material material;
-	Vector4f intPoint;
+//	Vector4f intPoint;
 
-	virtual Vector4f getToOrigin(Vector4f origin) = 0;
-	virtual Vector4f getNormal() = 0;
-	virtual Vector4f getToLight(Vector4f lightPos) = 0;
+//	virtual Vector4f getToOrigin(Vector4f origin) = 0;
+	virtual Vector4f getNormal(Vector4f intPoint) = 0;
+//	virtual Vector4f getToLight(Vector4f lightPos) = 0;
 	
 	AbstractPrimitivum(){}
 
 	virtual ~AbstractPrimitivum(){}
 
-	virtual float intersect(Vector4f &origin, Vector4f &ray) = 0;
+	virtual Vector4f intersect(Vector4f &origin, Vector4f &ray) = 0;
 
 	void setMaterial(Material mat){
 		material = mat;
@@ -89,20 +87,9 @@ private:
 	
 public:
 	
-	virtual Vector4f getToOrigin(Vector4f origin){
-		Vector4f ret = origin.minus(intPoint);
-		ret.normalize();
-		return ret;
-	}
-	
-	virtual Vector4f getNormal(){
+	virtual Vector4f getNormal(Vector4f intPoint){
 		Vector4f ret = intPoint.minus(center);
-		ret.normalize();
-		return ret;
-	}
-	
-	virtual Vector4f getToLight(Vector4f lightPos){
-		Vector4f ret = lightPos.minus(intPoint);
+		ret.removeHomo();
 		ret.normalize();
 		return ret;
 	}
@@ -115,7 +102,7 @@ public:
 		setTransformationMatrix();
 	}
 	
-	virtual float intersect(Vector4f &origin, Vector4f &ray){
+	virtual Vector4f intersect(Vector4f &origin, Vector4f &ray){
 		Vector4f to = transformVector(origin);
 		ray.removeHomo();
 		Vector4f tr = transformVector(ray);
@@ -126,19 +113,19 @@ public:
 
 		float D = (b * b) - (4 * a * c);
 		if (D < 0) {	// No intersection
-			return FINFINITY;
+			return NULLVECTOR;
 		}
 		float d1 = (-b + sqrt(D)) / (2 * a);
 		float d2 = (-b - sqrt(D)) / (2 * a);
 
-		float ret = min(d1, d2);
-		if(ret>=0){	// intersect
+		float ret = d1>=FEPSILON?d2>=FEPSILON?d1>d2?d2:d1:d1:-1;
+
+		if( ret >= FEPSILON ){	// intersect
 			Vector4f tmp = tr.mulByConst(-ret);
 			tmp = to.minus(tmp);
-			intPoint = tran.mulByVec(tmp);
-			return ret;
+			return tran.mulByVec(tmp);
 		}
-		return FINFINITY; // no positive intersect
+		return NULLVECTOR; // no positive intersect
 	}
 
 };
@@ -174,24 +161,13 @@ private:
 	}
 
 public:
-
-	virtual Vector4f getToOrigin(Vector4f origin){
-		Vector4f ret = origin.minus(intPoint);
-		ret.normalize();
-		return ret;
-	}
 	
-	virtual Vector4f getNormal(){
+	virtual Vector4f getNormal(Vector4f intPoint){
 		Vector4f u = points[1].minus(points[0]);
 		Vector4f v = points[2].minus(points[0]);
 		Vector4f ret = u.cross(v);
 		ret.normalize();
-		return ret;
-	}
-	
-	virtual Vector4f getToLight(Vector4f lightPos){
-		Vector4f ret = lightPos.minus(intPoint);
-		ret.normalize();
+		ret.removeHomo();
 		return ret;
 	}
 
@@ -202,26 +178,31 @@ public:
 		points[2] = v3;
 	}
 
-	virtual float intersect(Vector4f &origin, Vector4f &ray){
+	virtual Vector4f intersect(Vector4f &origin, Vector4f &ray){
 		Vector4f to = origin;
 		ray.removeHomo();
 		Vector4f tr = ray;
 		
-		Vector4f tmp = points[0].minus(points[1]);
-		Vector4f normalPlane = points[2].minus(points[1]).cross(tmp);
+		Vector4f u = points[1].minus(points[0]);
+		Vector4f v = points[2].minus(points[0]);
+		Vector4f normalPlane = u.cross(v);
 		
-		tmp = points[0].minus(to);
-		float t = normalPlane.dotNoHomo(tmp)/normalPlane.dotNoHomo(tr);
+		Vector4f tmp = points[0].minus(to);
+		float cth1 = normalPlane.dotNoHomo(tr);
+		float t = normalPlane.dotNoHomo(tmp)/cth1;
+
+		
+		if(cth1 > 0 || t < 0 || fabs(t) < FEPSILON){
+			return NULLVECTOR;
+		}
 		
 		tmp = tr.mulByConst(-t);
 		tmp = to.minus(tmp);
 		
 		if(barycentricInside(tmp)){
-			Vector4f tmp = tr.mulByConst(-t);
-			intPoint = to.minus(tmp);
-			return t;
+			return tmp;
 		}
-		return FINFINITY;
+		return NULLVECTOR;
 	}
 
 };

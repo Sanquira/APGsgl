@@ -8,7 +8,7 @@
 /// uncomment the tests you wish to run
 
 //my includes
-#include <vld.h>
+//#include <vld.h>
 #include <algorithm>
 
 using namespace std;
@@ -47,7 +47,7 @@ using namespace std;
 #ifdef TEST4
 #define TEST_4A
 #define TEST_4B
-//#define TEST_4C
+#define TEST_4C
 #endif
 
 #ifdef TEST5
