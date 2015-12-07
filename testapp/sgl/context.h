@@ -660,7 +660,7 @@ private:
 		if(scenePrimitives[idxMin]->material.T != 0){
 			Vector4f refRay = refractRay(ray, normalVec, scenePrimitives[idxMin]->material.ior);
 
-			// find refract out TODO
+/*			// find refract out TODO
 			Vector4f tmp = scenePrimitives[idxMin]->intersect(intPoint,refRay);
 			if(tmp.w != -1){
 				refRay = refractRay(refRay, scenePrimitives[idxMin]->getNormal(tmp), 1/scenePrimitives[idxMin]->material.ior);
@@ -669,11 +669,11 @@ private:
 					clr.add(ret, scenePrimitives[idxMin]->material.T);
 				}
 			}
-
-//			// no refract on other side
-//			Color ret = computeRecursionColor(++depth, intPoint, refRay);
-//			clr.add(ret, scenePrimitives[idxMin]->material.T);
-			
+//*/
+			// no refract on other side
+			Color ret = computeRecursionColor(++depth, intPoint, refRay);
+			clr.add(ret, scenePrimitives[idxMin]->material.T);
+//*/			
 		}
 		
 		endLabel:
@@ -713,7 +713,7 @@ private:
 		Vector4f normalVec = primitivum->getNormal(intPoint);
 		Vector4f toCamVec = origin.minus(intPoint);
 		toCamVec.normalize();
-		float prColorRate = 1-primitivum->material.ks-primitivum->material.T; // TODO
+		float prColorRate = 1;
 		for(auto & l : *lights){
 			Vector4f toLightVec = l->position.minus(intPoint);
 			float distToLight = sqrt(toLightVec.dotNoHomo(toLightVec));

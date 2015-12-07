@@ -118,7 +118,7 @@ public:
 		float d1 = (-b + sqrt(D)) / (2 * a);
 		float d2 = (-b - sqrt(D)) / (2 * a);
 
-		float ret = d1>=FEPSILON?d2>=FEPSILON?d1>d2?d2:d1:d1:-1;
+		float ret = d1>=FEPSILON ? (d2>=FEPSILON ? (d1>d2 ? d2 : d1) : d1) : -1;
 
 		if( ret >= FEPSILON ){	// intersect
 			Vector4f tmp = tr.mulByConst(-ret);
