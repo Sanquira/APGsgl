@@ -35,7 +35,7 @@ private:
 	int width, height;
 	std::vector<Vector4f> vertexBuffer;
 	vector<std::unique_ptr<AbstractPrimitivum>> scenePrimitives;
-	vector<std::unique_ptr<PointLight>> lights;
+	vector<std::unique_ptr<AbstractLight>> lights;
 	std::stack<Matrix4f> modelViewStack, projectionStack;
 	std::stack<Matrix4f> *currMatrixStack;
 	int areaDrawMode, vertexDrawMode;
@@ -43,6 +43,7 @@ private:
 	bool depthTestEnable;
 	Matrix4f viewport;
 	Material material;
+	EmissiveMaterial emissiveMaterial;
 
 	void symetricPoints(int x, int y, Vector4f * center){
 		int xs = (int)center->x;
@@ -576,6 +577,11 @@ public:
 	void addTriangle(){
 		if(vertexBuffer.size()==3){
 			scenePrimitives.push_back(::make_unique<TrianglePrivitivum>(vertexBuffer[0],vertexBuffer[1],vertexBuffer[2],material));
+			if(emissiveMaterial.c0 != -1){
+				lights.push_back(::make_unique<AreaLight>(vertexBuffer[0],vertexBuffer[1],vertexBuffer[2],emissiveMaterial));
+				scenePrimitives.back()->material.color = emissiveMaterial.color;
+				scenePrimitives.back()->isLight = true;
+			}
 			vertexBuffer.clear();
 		}else{
 			cerr << "ERROR!!! addTriangle is NOT triangle!!!" << endl;
@@ -590,12 +596,19 @@ public:
 		this->material = mat;
 	}
 	
+	void setEmissiveMaterial(EmissiveMaterial mat){
+		this->emissiveMaterial = mat;
+	}
+	
 	void renderRayTrace(){
+//	lights.push_back(::make_unique<PointLight>(Vector4f(275,275,-800,1),Color(1,1,1)));
 		Vector4f camera = Vector4f(0,0,0,1);	//eye space
 		camera = modelViewStack.top().inverse().mulByVec(camera); //world space
 		Matrix4f iv = viewport.inverse();
 		Matrix4f ips = projectionStack.top().inverse();
 		Matrix4f imv = modelViewStack.top().inverse();
+//		int x = 400;
+//		int y = 550;
 		for (int y=0;y<height;y++){
 			for(int x=0;x<width;x++){
 				Vector4f pixel = Vector4f((float)x,(float)y,0,1);
@@ -637,6 +650,12 @@ private:
 			goto endLabel;
 		}
 		
+		// is light
+		if(scenePrimitives[idxMin]->isLight){
+			clr = scenePrimitives[idxMin]->material.color;
+			goto endLabel;
+		}
+		
 		// compute phong
 		clr = computePixelColor(scenePrimitives[idxMin], intPoint, origin, ray, &lights);
 		
@@ -660,7 +679,7 @@ private:
 		if(scenePrimitives[idxMin]->material.T != 0){
 			Vector4f refRay = refractRay(ray, normalVec, scenePrimitives[idxMin]->material.ior);
 
-/*			// find refract out TODO
+			// find refract out 
 			Vector4f tmp = scenePrimitives[idxMin]->intersect(intPoint,refRay);
 			if(tmp.w != -1){
 				refRay = refractRay(refRay, scenePrimitives[idxMin]->getNormal(tmp), 1/scenePrimitives[idxMin]->material.ior);
@@ -669,11 +688,7 @@ private:
 					clr.add(ret, scenePrimitives[idxMin]->material.T);
 				}
 			}
-//*/
-			// no refract on other side
-			Color ret = computeRecursionColor(++depth, intPoint, refRay);
-			clr.add(ret, scenePrimitives[idxMin]->material.T);
-//*/			
+		
 		}
 		
 		endLabel:
@@ -697,6 +712,7 @@ private:
 		}
 		if(cth1>0){
 			cth1 = -cth1;
+			pior = ior;
 		}
 		float cth2 = 1.-(pior*pior)*(1.-(cth1*cth1));
 		if(cth2 < 0){
@@ -708,40 +724,64 @@ private:
 		return ret;
 	}
 	
-	Color computePixelColor(std::unique_ptr<AbstractPrimitivum>& primitivum,Vector4f intPoint, Vector4f origin, Vector4f ray, vector<std::unique_ptr<PointLight>> *lights){
+	Color computePixelColor(std::unique_ptr<AbstractPrimitivum>& primitivum,Vector4f intPoint, Vector4f origin, Vector4f ray, vector<std::unique_ptr<AbstractLight>> *lights){
 		Color color;
 		Vector4f normalVec = primitivum->getNormal(intPoint);
 		Vector4f toCamVec = origin.minus(intPoint);
 		toCamVec.normalize();
 		float prColorRate = 1;
 		for(auto & l : *lights){
-			Vector4f toLightVec = l->position.minus(intPoint);
-			float distToLight = sqrt(toLightVec.dotNoHomo(toLightVec));
-			toLightVec = l->position.minus(intPoint);
-			toLightVec.normalize();
-			bool skipLight = false;
-			for (size_t i = 0; i < scenePrimitives.size(); i++){
-				Vector4f tmp = scenePrimitives[i]->intersect(intPoint, toLightVec);
-				float dist = intPoint.minus(tmp).getSize();
-				if(tmp.w != -1 && fabs(dist - distToLight) >= FEPSILON){
-					skipLight=true;
-					break;
-				}
+			vector<Vector4f> positions = l->getLightPositions();
+			Vector4f lightNormal = l->getLightNormal();
+			if(positions.size()==1){
+				lightNormal = intPoint.minus(positions[0]);
+				lightNormal.normalize();
 			}
-			if(!skipLight){
-				float cosa = toLightVec.dotNoHomo(normalVec);
-				color.red += prColorRate * l->color.red * primitivum->material.kd * primitivum->material.color.red * cosa;
-				color.green += prColorRate * l->color.green * primitivum->material.kd * primitivum->material.color.green * cosa;
-				color.blue += prColorRate * l->color.blue * primitivum->material.kd * primitivum->material.color.blue * cosa;
-			
-				toLightVec = normalVec.mulByConst(2*cosa).minus(toLightVec);
-				float cosb = toCamVec.dotNoHomo(toLightVec);
-				if(cosb<0){
-					cosb = 0;
+			lightNormal = lightNormal.reverse();
+			float lightAreaRatio = l->getLightArea() / positions.size();
+			for(size_t lp = 0; lp < positions.size(); lp++){
+		
+				Vector4f toLightVec = positions[lp].minus(intPoint);
+				
+				if(toLightVec.getSize()<=FEPSILON){
+					cout << "t" << endl;
 				}
-				color.red +=  l->color.red * primitivum->material.ks   * pow(cosb,primitivum->material.shine);
-				color.green +=  l->color.green * primitivum->material.ks * pow(cosb,primitivum->material.shine);
-				color.blue +=  l->color.blue * primitivum->material.ks * pow(cosb,primitivum->material.shine);
+				
+				float distToLight = toLightVec.getSize();
+				toLightVec.normalize();
+				bool skipLight = false;
+				for (size_t i = 0; i < scenePrimitives.size(); i++){
+					Vector4f tmp = scenePrimitives[i]->intersect(intPoint, toLightVec);
+					float dist = intPoint.minus(tmp).getSize();
+					if(tmp.w != -1 && fabs(dist - distToLight) >= FEPSILON && dist < distToLight){
+						skipLight=true;
+						break;
+					}
+				}
+				if(!skipLight){
+					Color clrTmp;
+					float cosa = toLightVec.dotNoHomo(normalVec);
+					clrTmp.red += prColorRate * l->emat.color.red * primitivum->material.kd * primitivum->material.color.red * cosa;
+					clrTmp.green += prColorRate * l->emat.color.green * primitivum->material.kd * primitivum->material.color.green * cosa;
+					clrTmp.blue += prColorRate * l->emat.color.blue * primitivum->material.kd * primitivum->material.color.blue * cosa;
+				
+					Vector4f tmp = normalVec.mulByConst(2*cosa).minus(toLightVec);
+					float cosb = toCamVec.dotNoHomo(tmp);
+					if(cosb<0){
+						cosb = 0;
+					}
+					clrTmp.red +=  l->emat.color.red * primitivum->material.ks   * pow(cosb,primitivum->material.shine);
+					clrTmp.green +=  l->emat.color.green * primitivum->material.ks * pow(cosb,primitivum->material.shine);
+					clrTmp.blue +=  l->emat.color.blue * primitivum->material.ks * pow(cosb,primitivum->material.shine);
+					
+					float cosPhi = lightNormal.dotNoHomo(toLightVec);
+					float denum = l->emat.c0 + l->emat.c1 * distToLight + l->emat.c2 * distToLight * distToLight;
+					
+					color.red += clrTmp.red * cosPhi * lightAreaRatio / denum;
+					color.green += clrTmp.green * cosPhi * lightAreaRatio / denum;
+					color.blue += clrTmp.blue * cosPhi * lightAreaRatio / denum;
+					
+				}
 			}
 		}
 		return color;

@@ -18,22 +18,98 @@
 #define FINFINITY std::numeric_limits<float>::infinity()
 #define NULLVECTOR Vector4f(0,0,0,-1);
 #define FEPSILON 1e-2
+#define LIGHTAREARAYS 16
 
 using namespace std;
 
-class PointLight {
-private:
+class AbstractLight{
+
+public:
+	
+	EmissiveMaterial emat;
+	
+	AbstractLight(){}
+	
+	virtual ~AbstractLight(){}
+	
+	virtual vector<Vector4f> getLightPositions() = 0; 
+	
+	virtual float getLightArea() = 0;
+	
+	virtual Vector4f getLightNormal() = 0;
+
+};
+
+class PointLight : public AbstractLight {
 
 public:
 	
 	Vector4f position;
-	Color color;
 	
 	PointLight(Vector4f position, Color clr){
 		this->position = position;
-		this->color = clr;
+		this->emat = EmissiveMaterial(clr.red,clr.green,clr.blue,1,0,0);
 	}
 
+	virtual vector<Vector4f> getLightPositions(){
+		vector<Vector4f> ret;
+		ret.push_back(position);
+		return ret;
+	}
+	
+	virtual float getLightArea(){
+		return 1;
+	}
+	
+	virtual Vector4f getLightNormal(){
+		return NULLVECTOR;
+	}
+
+};
+
+class AreaLight : public AbstractLight {
+public:
+	Vector4f u;
+	Vector4f v;
+	Vector4f p1;
+	
+	AreaLight(Vector4f p1, Vector4f p2, Vector4f p3, EmissiveMaterial emat){
+		u = p2.minus(p1);
+		v = p3.minus(p1);
+		this->p1 = p1;
+		this->emat = emat;
+	}
+	
+	virtual vector<Vector4f> getLightPositions(){
+		vector<Vector4f> ret;
+		for(int i=0; i<LIGHTAREARAYS; i++){
+			float r1 = (float)rand()/(float)RAND_MAX;
+			float r2 = (float)rand()/(float)RAND_MAX;
+			float t,s;
+			if(r1+r2>1){
+				t=1-r1;
+				s=1-r2;
+			}else{
+				t=r1;
+				s=r2;
+			}
+			Vector4f tmp0 = u.mulByConst(-t);
+			Vector4f tmp1 = v.mulByConst(-s);
+			Vector4f tmp = p1.minus(tmp0).minus(tmp1);
+			ret.push_back(tmp);
+		}
+		return ret;
+	}
+	
+	virtual float getLightArea(){
+		return 0.5*u.cross(v).getSize();
+	}
+	
+	virtual Vector4f getLightNormal(){
+		Vector4f tmp = u.cross(v);
+		tmp.normalize();
+		return tmp;
+	}
 
 };
 
@@ -42,23 +118,19 @@ class AbstractPrimitivum {
 public:
 
 	Material material;
-//	Vector4f intPoint;
-
-//	virtual Vector4f getToOrigin(Vector4f origin) = 0;
-	virtual Vector4f getNormal(Vector4f intPoint) = 0;
-//	virtual Vector4f getToLight(Vector4f lightPos) = 0;
+	bool isLight = false;
 	
 	AbstractPrimitivum(){}
 
 	virtual ~AbstractPrimitivum(){}
+
+	virtual Vector4f getNormal(Vector4f intPoint) = 0;
 
 	virtual Vector4f intersect(Vector4f &origin, Vector4f &ray) = 0;
 
 	void setMaterial(Material mat){
 		material = mat;
 	}	
-	
-	
 
 };
 
@@ -180,8 +252,8 @@ public:
 
 	virtual Vector4f intersect(Vector4f &origin, Vector4f &ray){
 		Vector4f to = origin;
-		ray.removeHomo();
 		Vector4f tr = ray;
+		tr.removeHomo();
 		
 		Vector4f u = points[1].minus(points[0]);
 		Vector4f v = points[2].minus(points[0]);
@@ -191,7 +263,6 @@ public:
 		float cth1 = normalPlane.dotNoHomo(tr);
 		float t = normalPlane.dotNoHomo(tmp)/cth1;
 
-		
 		if(cth1 > 0 || t < 0 || fabs(t) < FEPSILON){
 			return NULLVECTOR;
 		}

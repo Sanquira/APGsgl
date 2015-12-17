@@ -322,6 +322,29 @@ public:
 	
 };
 
+class EmissiveMaterial{
+public:
+	Color color = Color(1,1,1);
+	float c0 = -1;
+	float c1 = 0;
+	float c2 = 0;
+	
+	EmissiveMaterial(){
+	}
+
+	EmissiveMaterial(float r, float g, float b, float c0, float c1, float c2){
+		this->color = Color(r,g,b);
+		this->c0 = c0;
+		this->c1 = c1;
+		this->c2 = c2;
+	}
+	
+	void toTerminal(){
+		cout << "c0: " << c0 << ", c1: " << c1 << ", c2: " << c2 << endl;
+	}
+
+};
+
 bool compareVector4fX(Vector4f i, Vector4f j) {
 	return (i.x < j.x);
 }

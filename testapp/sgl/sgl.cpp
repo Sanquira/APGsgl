@@ -661,31 +661,14 @@ void sglRasterizeScene() {}
 void sglEnvironmentMap(const int width,
 	const int height,
 	float *texels)
-{}
+{
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
+	}
+	
+}
 
-/// Emissive material specification.
-/**
-
-  Sets the emissive properties for subsequent area lights geometry (SGL_POLYGONs)
-  specification. The geometry represents patches of a single area light until
-  another call to sglEmissiveMaterial() occurs. Only triangle patches need to be
-  supported.
-
-  The total energy emitted from one area light patch is (r, g, b) * patch_area.
-  The attenuation with the distance d is 1 / (c0 + c1*d + c2*d^2).
-
-  @param r [in] the red color component of light intensity per unit area
-  @param g [in] the green color component of light intensity per unit area
-  @param b [in] the blue color component of light intensity per unit area
-  @param c0 [in] the constant attenuation coefficient
-  @param c1 [in] the linear attenuation coefficient
-  @param c2 [in] the quadratic attenuation coefficient
-
-  ERRORS:
-   - SGL_INVALID_OPERATION
-    No context has been allocated yet or sglEmissiveMaterial() is called within
-    a sglBegin() / sglEnd() sequence.
- */
 void sglEmissiveMaterial(
 	const float r,
 	const float g,
@@ -693,6 +676,31 @@ void sglEmissiveMaterial(
 	const float c0,
 	const float c1,
 	const float c2
-	)
-{}
+	){
+	if (transactionFragmentEnabled || contextBuffer[currContext] == NULL){
+		setErrCode(SGL_INVALID_OPERATION);
+		return;
+	}
+	EmissiveMaterial mat = EmissiveMaterial(r,g,b,c0,c1,c2);
+	contextBuffer[currContext]->setEmissiveMaterial(mat);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
