@@ -666,7 +666,7 @@ void sglEnvironmentMap(const int width,
 		setErrCode(SGL_INVALID_OPERATION);
 		return;
 	}
-	
+	contextBuffer[currContext]->setEnviromentMap(width,height,texels);
 }
 
 void sglEmissiveMaterial(

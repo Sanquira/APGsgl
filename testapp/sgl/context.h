@@ -32,7 +32,8 @@ private:
 	Color bcgColor;
 	float *colorBuffer;
 	float *depthBuffer;
-	int width, height;
+	float *envMap;
+	int width, height, envMapWidth, envMapHeight;
 	std::vector<Vector4f> vertexBuffer;
 	vector<std::unique_ptr<AbstractPrimitivum>> scenePrimitives;
 	vector<std::unique_ptr<AbstractLight>> lights;
@@ -95,6 +96,7 @@ public:
 		lights.clear();
 		free(colorBuffer);
 		free(depthBuffer);
+		free(envMap);
 
 		// matrix stacks
 		while (!modelViewStack.empty()){
@@ -600,6 +602,13 @@ public:
 		this->emissiveMaterial = mat;
 	}
 	
+	void setEnviromentMap(int width,int height,float *texels){
+		free(envMap);
+		envMapWidth = width;
+		envMapHeight = height;
+		envMap = texels;
+	}
+	
 	void renderRayTrace(){
 //	lights.push_back(::make_unique<PointLight>(Vector4f(275,275,-800,1),Color(1,1,1)));
 		Vector4f camera = Vector4f(0,0,0,1);	//eye space
@@ -647,6 +656,7 @@ private:
 		
 		// no intpnt
 		if(intDist == FINFINITY){
+			clr = getEnvMapColor(ray);
 			goto endLabel;
 		}
 		
@@ -722,6 +732,18 @@ private:
 		ret = ray.mulByConst(pior).minus(ret);
 		ret.normalize();
 		return ret;
+	}
+	
+	Color getEnvMapColor(Vector4f ray){
+		float d = sqrt(ray.x*ray.x+ray.y*ray.y);
+		float r = d>0?acos(ray.z)/(2*M_PI*d):0;
+		float s = 0.5 + r * ray.x;
+		float t = 0.5 - r * ray.y;
+		
+		int x = s*envMapWidth;
+		int y = t*envMapHeight;
+		
+		return  Color(envMap[((y)*envMapWidth + x) * 3 + 0], envMap[((y)*envMapWidth + x) * 3 + 1], envMap[((y)*envMapWidth + x) * 3 + 2]);
 	}
 	
 	Color computePixelColor(std::unique_ptr<AbstractPrimitivum>& primitivum,Vector4f intPoint, Vector4f origin, Vector4f ray, vector<std::unique_ptr<AbstractLight>> *lights){
