@@ -102,7 +102,7 @@ public:
 	}
 	
 	virtual float getLightArea(){
-		return 0.5*u.cross(v).getSize();
+		return (float) 0.5*u.cross(v).getSize();
 	}
 	
 	virtual Vector4f getLightNormal(){

@@ -10,7 +10,7 @@
 #include "graphic_primitives.h"
 #include "context.h"
 
-#define FINFINITY std::numeric_limits<float>::infinity()
+//#define FINFINITY std::numeric_limits<float>::infinity()
 
 using namespace std;
 
