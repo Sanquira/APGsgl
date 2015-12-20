@@ -791,7 +791,8 @@ private:
 
 		cth2 = pior*cth1 + sqrt(cth2);
 		Vector4f ret = normal.mulByConst(-cth2);
-		ret = ret.minus(ray.mulByConst(pior).reverse());
+		Vector4f tmp = ray.mulByConst(pior).reverse();
+		ret = ret.minus(tmp);
 		ret.normalize();
 
 		return ret;
