@@ -372,8 +372,7 @@ public:
 		for (int x = x1; x <= maxX; x++) {
 			if (uhel) {
 				setPixel(y, x, depth, currColor);
-			}
-			else {
+			} else {
 				setPixel(x, y, depth, currColor);
 			}
 
@@ -444,6 +443,7 @@ public:
 			Vector4f vec2 = mat.mulByVec(vertexBuffer[i + 1]);
 			renderLine(vec1, vec2);
 		}
+
 		Vector4f vec1 = mat.mulByVec(vertexBuffer.back());
 		Vector4f vec2 = mat.mulByVec(vertexBuffer.front());
 		renderLine(vec1, vec2);
@@ -498,7 +498,7 @@ public:
 				if (t >= 0 && t < 1) {
 					float x = vec1.x + vec.x * t;
 					float z = vec1.z + vec.z * t;
-					prus.push_back(Vector4f(ceil(x), (float)y, z, 1));
+					prus.push_back(Vector4f(ceil(x), (float) y, z, 1));
 				}
 			}
 			std::sort(prus.begin(), prus.end(), compareVector4fX);
@@ -508,7 +508,7 @@ public:
 				{
 					float zdd = (prus[i + 1].z - prus[i].z) / (prus[i + 1].x - prus[i].x);
 					depth = prus[i].z;
-					for (int x = (int)prus[i].x; x < (int)prus[i + 1].x; x++)
+					for (int x = (int) prus[i].x; x < (int) prus[i + 1].x; x++)
 					{
 						setPixel(x, y, depth, currColor);
 						depth += zdd;
@@ -543,6 +543,7 @@ public:
 
 	void drawEllipseFilled(Vector4f center, float a, float b) {
 		vertexBuffer.clear();
+
 		for (int i = 0; i < 40; i++)
 		{
 			float uhel = (float) (M_PI*i / 20.);
@@ -598,12 +599,12 @@ public:
 			}
 
 			clr = getPixelColor((int)seed.x, (int)seed.y + 1);
-			if (!clr.compare(Color(-1, currColor.green, currColor.blue)) && !clr.compare(currColor)){
+			if (!clr.compare(Color(-1, currColor.green, currColor.blue)) && !clr.compare(currColor)) {
 				seeds.push_back(Vector4f(seed.x, seed.y + 1, 0, 1));
 			}
 
 			clr = getPixelColor((int)seed.x, (int)seed.y - 1);
-			if (!clr.compare(Color(-1, currColor.green, currColor.blue)) && !clr.compare(currColor)){
+			if (!clr.compare(Color(-1, currColor.green, currColor.blue)) && !clr.compare(currColor)) {
 				seeds.push_back(Vector4f(seed.x, seed.y - 1, 0, 1));
 			}
 
@@ -628,11 +629,13 @@ public:
 	void addTriangle() {
 		if (vertexBuffer.size() == 3) {
 			scenePrimitives.push_back(::make_unique<TrianglePrivitivum>(vertexBuffer[0],vertexBuffer[1],vertexBuffer[2],material));
+
 			if (emissiveMaterial.c0 != -1) {
 				lights.push_back(::make_unique<AreaLight>(vertexBuffer[0],vertexBuffer[1],vertexBuffer[2],emissiveMaterial));
 				scenePrimitives.back()->material.color = emissiveMaterial.color;
 				scenePrimitives.back()->isLight = true;
 			}
+
 			vertexBuffer.clear();
 		} else {
 			cerr << "ERROR!!! addTriangle is NOT triangle!!!" << endl;
@@ -660,7 +663,6 @@ public:
 	}
 	
 	void renderRayTrace() {
-//	lights.push_back(::make_unique<PointLight>(Vector4f(275,275,-800,1),Color(1,1,1)));
 		Vector4f camera = Vector4f(0,0,0,1);	//eye space
 		camera = modelViewStack.top().inverse().mulByVec(camera); //world space
 		Matrix4f iv = viewport.inverse();
@@ -676,69 +678,66 @@ public:
 				pixel.w = 0;	//eye space
 				pixel = imv.mulByVec(pixel); //world space
 				pixel.normalize();
-				//printf("%d %d ",x,y);
-				//cout << x << " " << y << " ";
+
 				Color clr = computeRecursionColor(0, camera, pixel);
-				//printf("cl ");
-				//cout << "cl";
+
 				setPixel(x, y, 0, clr);
-				//printf("set\n");
-				//cout << " set" << endl;
 			}
 		}
-		
-		
+
+
 	}
-	
-private: 	
+
+private:
 	Color computeRecursionColor(int depth, Vector4f origin, Vector4f ray) {
 		Color clr;
 		Vector4f normalVec;
 		Vector4f intPoint;
-		
+
 		// find intersection point
 		float intDist = FINFINITY;
 		int idxMin = -1;
 		for (size_t i = 0; i < scenePrimitives.size(); i++) {
 			Vector4f tmp = scenePrimitives[i]->intersect(origin, ray);
 			float dist = origin.minus(tmp).getSize();
+
 			if (tmp.w != -1 && dist <= intDist) {
 				intPoint = tmp;
 				intDist = dist;
 				idxMin = i;
 			}
 		}
-		
+
 		// no intersection
 		if (intDist == FINFINITY) {
 			if (isEnvMapSet()) {
 				clr = getEnvMapColor(ray);
 			}
-			goto endLabel;
+
+			return clr;
 		}
-		
+
 		// is light
 		if (scenePrimitives[idxMin]->isLight) {
 			clr = scenePrimitives[idxMin]->material.color;
-			goto endLabel;
+			return clr;
 		}
-		
+
 		// compute phong
 		clr = computePixelColor(scenePrimitives[idxMin], intPoint, origin, ray, &lights);
-		
+
 		// steps exceeded
 		if (depth >= MAX_RECURSION) {
-			goto endLabel;
+			return clr;
 		}
-		
+
 		normalVec = scenePrimitives[idxMin]->getNormal(intPoint);
-		
+
 		// compute reflected ray
 		if (scenePrimitives[idxMin]->material.ks != 0) {
 			Vector4f refRay = reflectRay(ray, normalVec);
-			Color ret = Color(1,1,1);
-			ret = computeRecursionColor(++depth, intPoint, refRay);
-			
+
+			Color ret = computeRecursionColor(++depth, intPoint, refRay);
 			clr.add(ret, scenePrimitives[idxMin]->material.ks);
 		}
 
@@ -747,54 +746,58 @@ private:
 			Vector4f refRay = refractRay(ray, normalVec, scenePrimitives[idxMin]->material.ior);
 
 			// find refract out 
-			Vector4f tmp = scenePrimitives[idxMin]->intersect(intPoint,refRay);
+			Vector4f tmp = scenePrimitives[idxMin]->intersect(intPoint, refRay);
 			if (tmp.w != -1) {
-				refRay = refractRay(refRay, scenePrimitives[idxMin]->getNormal(tmp), 1/scenePrimitives[idxMin]->material.ior);
+				refRay = refractRay(refRay, scenePrimitives[idxMin]->getNormal(tmp), scenePrimitives[idxMin]->material.ior);
 				if (refRay.w != -1) {
 					Color ret = computeRecursionColor(++depth, tmp, refRay);
 					clr.add(ret, scenePrimitives[idxMin]->material.T);
 				}
 			}
-		
 		}
-		
-		endLabel:
-		
+
 		return clr;
 	}
 
-	Vector4f reflectRay(Vector4f ray, Vector4f normal){
+	Vector4f reflectRay(Vector4f ray, Vector4f normal) {
 		float cth1 = ray.dotNoHomo(normal);
-		Vector4f ret = normal.mulByConst(2*cth1);
+
+		Vector4f ret = normal.mulByConst(2 * cth1);
 		ret = ray.minus(ret);
 		ret.normalize();
+
 		return ret;
 	}
-	
-	Vector4f refractRay(Vector4f ray, Vector4f normal, float ior) {
-		float pior = 1.f/ior;
-		float cth1 = ray.dotNoHomo(normal);
-		if (cth1 == 0) {
-			return ray;
-		}
 
-		if (cth1 > 0) {
-			cth1 = -cth1;
+	Vector4f refractRay(Vector4f ray, Vector4f normal, float ior) {
+		float pior;
+		float cth1 = ray.dotNoHomo(normal);
+
+		if (cth1 < 0) {
+			// from outside
+			pior = 1.f / ior;
+		} else {
+			// from inside
 			pior = ior;
+			cth1 = -cth1;
+			normal = normal.reverse();
 		}
 
 		float cth2 = (float) (1. - (pior*pior) * (1. - (cth1*cth1)));
 		if (cth2 < 0) {
-			return Vector4f(0,0,0,-1);
+			// end
+			return Vector4f(0, 0, 0, -1);
 		}
 
-		Vector4f ret = normal.mulByConst(pior*cth1 + sqrt(cth2));
-		ret = ray.mulByConst(pior).minus(ret);
+		cth2 = pior*cth1 + sqrt(cth2);
+		Vector4f ret = normal.mulByConst(-cth2);
+		ret = ret.minus(ray.mulByConst(pior).reverse());
 		ret.normalize();
+
 		return ret;
 	}
 	
-	Color getEnvMapColor(Vector4f ray){
+	Color getEnvMapColor(Vector4f ray) {
 		float d = sqrt(ray.x*ray.x + ray.y*ray.y);
 		float r = (d > 0) ? (float) (acos(ray.z) / (2*M_PI*d)) : 0;
 		float s = 0.5f + r * ray.x;
@@ -802,8 +805,9 @@ private:
 		
 		int x = (int) (s * envMapWidth);
 		int y = (int) (t * envMapHeight);
+		int pixel = (y * envMapWidth + x) * 3;
 		
-		return Color(envMap[((y)*envMapWidth + x) * 3 + 0], envMap[((y)*envMapWidth + x) * 3 + 1], envMap[((y)*envMapWidth + x) * 3 + 2]);
+		return Color(envMap[pixel + 0], envMap[pixel + 1], envMap[pixel + 2]);
 	}
 	
 	Color computePixelColor(std::unique_ptr<AbstractPrimitivum>& primitivum, Vector4f intPoint, Vector4f origin, Vector4f ray, vector<std::unique_ptr<AbstractLight>> *lights) {
