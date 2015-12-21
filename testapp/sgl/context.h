@@ -824,6 +824,7 @@ private:
 			Vector4f lightNormal = l->getLightNormal();
 
 			if (positions.size() == 1) {
+				// point light
 				lightNormal = intPoint.minus(positions[0]);
 				lightNormal.normalize();
 			}
@@ -831,7 +832,7 @@ private:
 			lightNormal = lightNormal.reverse();
 			float lightAreaRatio = l->getLightArea() / positions.size();
 
-			// iterate over every light 'ray' (AreaLight has 16)
+			// iterate over every light "ray" (AreaLight has 16)
 			for (size_t lp = 0; lp < positions.size(); lp++) {
 		
 				Vector4f toLightVec = positions[lp].minus(intPoint);
@@ -876,7 +877,7 @@ private:
 					clrTmp.blue  +=  l->emat.color.blue  * primitivum->material.ks * pow(cosb,primitivum->material.shine);
 					
 					// AreaLight
-					float cosPhi = lightNormal.dotNoHomo(toLightVec); // TODO: ma tu byt lightNormal?
+					float cosPhi = lightNormal.dotNoHomo(toLightVec);
 					float denum = (l->emat.c0) + (l->emat.c1) * distToLight + (l->emat.c2) * distToLight * distToLight;
 					
 					color.red   += clrTmp.red   * cosPhi * lightAreaRatio / denum;
