@@ -751,7 +751,7 @@ private:
 				refRay = refractRay(refRay, scenePrimitives[idxMin]->getNormal(tmp), scenePrimitives[idxMin]->material.ior);
 				if (refRay.w != -1) {
 					Color ret = computeRecursionColor(++depth, tmp, refRay);
-					clr.add(ret, scenePrimitives[idxMin]->material.T);
+					clr.add(ret, scenePrimitives[idxMin]->material.T*scenePrimitives[idxMin]->material.T);
 				}
 			}
 		}
