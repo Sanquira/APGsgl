@@ -668,7 +668,6 @@ public:
 		Matrix4f iv = viewport.inverse();
 		Matrix4f ips = projectionStack.top().inverse();
 		Matrix4f imv = modelViewStack.top().inverse();
-
 		for (int y = 0; y < height; y++) {
 			for(int x = 0; x < width; x++) {
 				Vector4f pixel = Vector4f((float) x, (float) y, 0, 1);
@@ -680,7 +679,6 @@ public:
 				pixel.normalize();
 
 				Color clr = computeRecursionColor(0, camera, pixel);
-
 				setPixel(x, y, 0, clr);
 			}
 		}
@@ -811,10 +809,6 @@ private:
 		float dX = 1 - (eX - x);
 		float dY = 1 - (eY - y);
 
-		//int x = (int) (s * envMapWidth);
-		//int y = (int) (t * envMapHeight);
-		//int pixel = (y * envMapWidth + x) * 3;
-
 		int pix1 = (y * envMapWidth + x) * 3;
 		int pix2 = (y * envMapWidth + x+1) * 3;
 		int pix3 = ((y+1) * envMapWidth + x) * 3;
@@ -828,7 +822,7 @@ private:
 		c.add(y1, dY);
 		c.add(y2, 1 - dY);
 
-		return c;// Color(envMap[pixel + 0], envMap[pixel + 1], envMap[pixel + 2]);
+		return c;
 	}
 	
 	Color computePixelColor(std::unique_ptr<AbstractPrimitivum>& primitivum, Vector4f intPoint, Vector4f origin, Vector4f ray, vector<std::unique_ptr<AbstractLight>> *lights) {
@@ -842,7 +836,6 @@ private:
 		for (auto & l : *lights) {
 			vector<Vector4f> positions = l->getLightPositions();
 			Vector4f lightNormal = l->getLightNormal();
-
 			if (positions.size() == 1) {
 				// point light
 				lightNormal = intPoint.minus(positions[0]);
@@ -869,7 +862,7 @@ private:
 				for (size_t i = 0; i < scenePrimitives.size(); i++) {
 					Vector4f tmp = scenePrimitives[i]->intersect(intPoint, toLightVec);
 					float dist = intPoint.minus(tmp).getSize();
-
+					
 					if ((tmp.w != -1) && (fabs(dist - distToLight) >= FEPSILON) && (dist < distToLight)) {
 						skipLight = true;
 						break;
@@ -882,6 +875,9 @@ private:
 
 					// Phong diffuse light
 					float cosa = toLightVec.dotNoHomo(normalVec);
+					if (cosa < 0) {
+						continue;
+					}
 					clrTmp.red   += prColorRate * l->emat.color.red   * primitivum->material.kd * primitivum->material.color.red * cosa;
 					clrTmp.green += prColorRate * l->emat.color.green * primitivum->material.kd * primitivum->material.color.green * cosa;
 					clrTmp.blue  += prColorRate * l->emat.color.blue  * primitivum->material.kd * primitivum->material.color.blue * cosa;
@@ -900,13 +896,13 @@ private:
 					float cosPhi = lightNormal.dotNoHomo(toLightVec);
 					float denum = (l->emat.c0) + (l->emat.c1) * distToLight + (l->emat.c2) * distToLight * distToLight;
 					
-					color.red   += clrTmp.red   * cosPhi * lightAreaRatio / denum;
-					color.green += clrTmp.green * cosPhi * lightAreaRatio / denum;
-					color.blue  += clrTmp.blue  * cosPhi * lightAreaRatio / denum;
+					color.red   = color.red + (clrTmp.red   * cosPhi * lightAreaRatio / denum);
+					color.green = color.green + (clrTmp.green * cosPhi * lightAreaRatio / denum);
+					color.blue  = color.blue + (clrTmp.blue  * cosPhi * lightAreaRatio / denum);
+					
 				}
 			}
 		}
-
 		return color;
 	}
 	

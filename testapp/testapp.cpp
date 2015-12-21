@@ -52,9 +52,9 @@ using namespace std;
 
 #ifdef TEST5
 //#define TEST_5A
-//#define TEST_5B
-#define TEST_5C
-#define TEST_5D
+#define TEST_5B
+//#define TEST_5C
+//#define TEST_5D
 #endif
 
 
@@ -376,6 +376,7 @@ void arcs(float initr, float R, float G, float B)
 }
 
 /// Element filling test
+
 void DrawTestScene2B()
 {
 	sglDisable(SGL_DEPTH_TEST);

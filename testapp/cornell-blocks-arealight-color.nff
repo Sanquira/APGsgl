@@ -21,6 +21,7 @@ resolution 512 512
 #area light sources
 
 L 1 0.95 0.8 20 atten 0 0 1
+#L 1 0 0 20 atten 0 0 1
 p 4 350 548 050   350 548 250   200 548 250   200 548 050
 
 L 0 1 0 20 atten 0 0 1
