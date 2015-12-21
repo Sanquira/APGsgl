@@ -804,11 +804,31 @@ private:
 		float s = 0.5f + r * ray.x;
 		float t = 0.5f - r * ray.y;
 		
-		int x = (int) (s * envMapWidth);
-		int y = (int) (t * envMapHeight);
-		int pixel = (y * envMapWidth + x) * 3;
+		float eX = s * envMapWidth;
+		float eY = t * envMapHeight;
+		int x = (int) floor(eX);
+		int y = (int) floor(eY);
+		float dX = 1 - (eX - x);
+		float dY = 1 - (eY - y);
+
+		//int x = (int) (s * envMapWidth);
+		//int y = (int) (t * envMapHeight);
+		//int pixel = (y * envMapWidth + x) * 3;
+
+		int pix1 = (y * envMapWidth + x) * 3;
+		int pix2 = (y * envMapWidth + x+1) * 3;
+		int pix3 = ((y+1) * envMapWidth + x) * 3;
+		int pix4 = ((y+1) * envMapWidth + x+1) * 3;
+
+		Color y1, y2, c;
+		y1 = Color(dX*envMap[pix1 + 0] + (1 - dX)*envMap[pix2 + 0], dX*envMap[pix1 + 1] + (1 - dX)*envMap[pix2 + 1], dX*envMap[pix1 + 2] + (1 - dX)*envMap[pix2 + 2]);
+		y2 = Color(dX*envMap[pix3 + 0] + (1 - dX)*envMap[pix4 + 0], dX*envMap[pix3 + 1] + (1 - dX)*envMap[pix4 + 1], dX*envMap[pix3 + 2] + (1 - dX)*envMap[pix4 + 2]);
 		
-		return Color(envMap[pixel + 0], envMap[pixel + 1], envMap[pixel + 2]);
+		c = Color(0, 0, 0);
+		c.add(y1, dY);
+		c.add(y2, 1 - dY);
+
+		return c;// Color(envMap[pixel + 0], envMap[pixel + 1], envMap[pixel + 2]);
 	}
 	
 	Color computePixelColor(std::unique_ptr<AbstractPrimitivum>& primitivum, Vector4f intPoint, Vector4f origin, Vector4f ray, vector<std::unique_ptr<AbstractLight>> *lights) {
@@ -851,7 +871,7 @@ private:
 					float dist = intPoint.minus(tmp).getSize();
 
 					if ((tmp.w != -1) && (fabs(dist - distToLight) >= FEPSILON) && (dist < distToLight)) {
-						skipLight=true;
+						skipLight = true;
 						break;
 					}
 				}
