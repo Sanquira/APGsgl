@@ -818,6 +818,7 @@ private:
 		toCamVec.normalize();
 		float prColorRate = 1;
 
+		// iterate over every light source
 		for (auto & l : *lights) {
 			vector<Vector4f> positions = l->getLightPositions();
 			Vector4f lightNormal = l->getLightNormal();
@@ -830,6 +831,7 @@ private:
 			lightNormal = lightNormal.reverse();
 			float lightAreaRatio = l->getLightArea() / positions.size();
 
+			// iterate over every light 'ray' (AreaLight has 16)
 			for (size_t lp = 0; lp < positions.size(); lp++) {
 		
 				Vector4f toLightVec = positions[lp].minus(intPoint);
@@ -840,8 +842,9 @@ private:
 				
 				float distToLight = toLightVec.getSize();
 				toLightVec.normalize();
-				bool skipLight = false;
 
+				// shadow detection
+				bool skipLight = false;
 				for (size_t i = 0; i < scenePrimitives.size(); i++) {
 					Vector4f tmp = scenePrimitives[i]->intersect(intPoint, toLightVec);
 					float dist = intPoint.minus(tmp).getSize();
@@ -852,25 +855,28 @@ private:
 					}
 				}
 
+				// not shadow
 				if (!skipLight) {
 					Color clrTmp;
+
+					// Phong diffuse light
 					float cosa = toLightVec.dotNoHomo(normalVec);
 					clrTmp.red   += prColorRate * l->emat.color.red   * primitivum->material.kd * primitivum->material.color.red * cosa;
 					clrTmp.green += prColorRate * l->emat.color.green * primitivum->material.kd * primitivum->material.color.green * cosa;
 					clrTmp.blue  += prColorRate * l->emat.color.blue  * primitivum->material.kd * primitivum->material.color.blue * cosa;
 				
+					// Phong specular light
 					Vector4f tmp = normalVec.mulByConst(2*cosa).minus(toLightVec);
 					float cosb = toCamVec.dotNoHomo(tmp);
-
 					if (cosb < 0) {
 						cosb = 0;
 					}
-					
 					clrTmp.red   +=  l->emat.color.red   * primitivum->material.ks * pow(cosb,primitivum->material.shine);
 					clrTmp.green +=  l->emat.color.green * primitivum->material.ks * pow(cosb,primitivum->material.shine);
 					clrTmp.blue  +=  l->emat.color.blue  * primitivum->material.ks * pow(cosb,primitivum->material.shine);
 					
-					float cosPhi = lightNormal.dotNoHomo(toLightVec);
+					// AreaLight
+					float cosPhi = lightNormal.dotNoHomo(toLightVec); // TODO: ma tu byt lightNormal?
 					float denum = (l->emat.c0) + (l->emat.c1) * distToLight + (l->emat.c2) * distToLight * distToLight;
 					
 					color.red   += clrTmp.red   * cosPhi * lightAreaRatio / denum;
